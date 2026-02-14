@@ -1,0 +1,16 @@
+# Supabase Configuration
+# This file is used for local development with Supabase CLI
+
+[api]
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+port = 54323
