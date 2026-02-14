@@ -1,0 +1,12 @@
+{
+  "fast": ["quick", "rapid", "swift", "speedy"],
+  "cloud": ["sky", "web", "online", "virtual"],
+  "data": ["information", "records", "stats", "metrics"],
+  "sync": ["synchronize", "align", "match", "coordinate"],
+  "smart": ["intelligent", "clever", "bright", "sharp"],
+  "flow": ["stream", "current", "movement", "flux"],
+  "hub": ["center", "core", "nexus", "base"],
+  "link": ["connect", "bond", "tie", "join"],
+  "net": ["network", "web", "mesh", "grid"],
+  "pulse": ["beat", "rhythm", "throb", "vibe"]
+}

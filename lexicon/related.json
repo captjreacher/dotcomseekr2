@@ -1,0 +1,12 @@
+{
+  "cloud": ["server", "hosting", "storage", "computing"],
+  "data": ["analytics", "database", "warehouse", "lake"],
+  "smart": ["ai", "ml", "intelligent", "automated"],
+  "flow": ["pipeline", "workflow", "process", "automation"],
+  "hub": ["platform", "portal", "gateway", "dashboard"],
+  "sync": ["backup", "mirror", "replica", "clone"],
+  "fast": ["performance", "speed", "optimization", "turbo"],
+  "link": ["api", "integration", "bridge", "connector"],
+  "net": ["internet", "protocol", "connection", "bandwidth"],
+  "pulse": ["monitor", "health", "status", "check"]
+}

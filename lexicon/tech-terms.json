@@ -1,0 +1,6 @@
+{
+  "prefixes": ["micro", "mega", "ultra", "super", "hyper", "meta", "neo", "omni"],
+  "suffixes": ["ify", "ly", "hub", "base", "flow", "sync", "kit", "stack"],
+  "actions": ["build", "deploy", "launch", "scale", "grow", "boost", "optimize"],
+  "qualities": ["simple", "modern", "robust", "agile", "lean", "clean", "pure"]
+}
