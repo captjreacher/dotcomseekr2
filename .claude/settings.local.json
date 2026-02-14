@@ -5,7 +5,8 @@
       "Bash(npm install:*)",
       "Bash(git commit:*)",
       "Bash(timeout 5 npm run dev:*)",
-      "Bash(PORT=3001 timeout 5 npm run dev:*)"
+      "Bash(PORT=3001 timeout 5 npm run dev:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }
