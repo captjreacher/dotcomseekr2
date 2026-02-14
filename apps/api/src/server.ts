@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import { healthRoutes } from './routes/health';
 
 export async function createServer() {
   const server = Fastify({
@@ -21,19 +22,8 @@ export async function createServer() {
     credentials: true,
   });
 
-  // Health check route
-  server.get('/health', async () => {
-    return { status: 'ok', timestamp: new Date().toISOString() };
-  });
-
-  // API v1 routes
-  server.get('/api/v1/health', async () => {
-    return {
-      status: 'ok',
-      version: '1.0.0',
-      timestamp: new Date().toISOString()
-    };
-  });
+  // Register routes
+  await server.register(healthRoutes);
 
   return server;
 }
