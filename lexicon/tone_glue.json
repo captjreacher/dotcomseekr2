@@ -1,0 +1,80 @@
+{
+  "prefixes": {
+    "size": ["micro", "mini", "nano", "mega", "giga", "ultra", "super", "hyper", "meta", "omni"],
+    "quality": ["pro", "prime", "max", "plus", "elite", "premium", "ultra", "super", "mega"],
+    "technology": ["auto", "smart", "cyber", "techno", "digital", "virtual", "cloud", "web", "net"],
+    "action": ["pre", "post", "re", "un", "de", "over", "under", "inter", "trans", "multi"],
+    "direction": ["up", "down", "in", "out", "over", "under", "cross", "trans", "inter"],
+    "time": ["now", "next", "future", "instant", "rapid", "quick", "fast", "real"],
+    "relationship": ["co", "inter", "cross", "multi", "poly", "mono", "uni", "bi", "tri"],
+    "negation": ["non", "un", "de", "anti", "counter"],
+    "position": ["top", "front", "fore", "back", "mid", "center", "core"],
+    "intensity": ["extra", "ultra", "super", "hyper", "mega", "max", "full"]
+  },
+  "suffixes": {
+    "action": ["ify", "ize", "ate", "en"],
+    "quality": ["ly", "ful", "ous", "ish", "like", "able", "ible"],
+    "result": ["ment", "tion", "sion", "ance", "ence"],
+    "agent": ["er", "or", "ist", "ian"],
+    "place": ["ery", "ary", "ory"],
+    "tech": ["tech", "soft", "ware", "app", "hub", "lab", "kit", "box", "pod"],
+    "collective": ["hub", "base", "core", "zone", "spot", "point", "node"],
+    "container": ["box", "kit", "pack", "suite", "stack", "vault", "store"],
+    "diminutive": ["let", "ette", "ie", "y"],
+    "abstract": ["ness", "ity", "dom", "ship", "hood"]
+  },
+  "connectors": {
+    "simple": ["to", "for", "at", "in", "on", "by", "with"],
+    "camel": [],
+    "compound": []
+  },
+  "modifiers": {
+    "speed": ["fast", "quick", "rapid", "instant", "swift", "express", "turbo", "boost"],
+    "size": ["big", "small", "tiny", "huge", "mega", "micro", "mini", "nano"],
+    "quality": ["good", "great", "best", "top", "prime", "elite", "pro", "plus"],
+    "simplicity": ["simple", "easy", "clean", "pure", "minimal", "lite", "basic"],
+    "power": ["power", "force", "strong", "mighty", "robust", "solid"],
+    "intelligence": ["smart", "clever", "bright", "wise", "genius", "brilliant"],
+    "style": ["sleek", "modern", "fresh", "new", "cool", "zen", "elegant"],
+    "reliability": ["true", "real", "solid", "stable", "steady", "sure", "safe"],
+    "innovation": ["new", "next", "future", "edge", "frontier", "pioneer"],
+    "emotion": ["happy", "joy", "love", "bright", "shine", "glow", "spark"]
+  },
+  "brandable_patterns": {
+    "tech_verbs": ["sync", "link", "ping", "ship", "deploy", "launch", "build", "scale", "boost"],
+    "tech_nouns": ["hub", "lab", "kit", "box", "stack", "vault", "core", "base", "node"],
+    "abstract_positive": ["zen", "flow", "vibe", "pulse", "spark", "glow", "shine", "wave"],
+    "abstract_neutral": ["scope", "range", "scale", "level", "tier", "layer", "phase"],
+    "industry_terms": ["cloud", "data", "net", "web", "code", "tech", "cyber", "digital"],
+    "action_words": ["go", "run", "fly", "jump", "leap", "dash", "rush", "zoom"],
+    "compound_friendly": ["way", "path", "road", "track", "line", "route", "trail"],
+    "metaphors": ["ocean", "sky", "star", "moon", "sun", "wave", "storm", "thunder"]
+  },
+  "alliteration_seeds": {
+    "b": ["byte", "build", "boost", "base", "bright", "bold", "bounce", "beam"],
+    "c": ["cloud", "code", "core", "create", "craft", "crew", "cyber", "crystal"],
+    "d": ["data", "drive", "deploy", "design", "dash", "dream", "digital"],
+    "f": ["flow", "fast", "forge", "flex", "focus", "fresh", "future", "fusion"],
+    "g": ["grow", "guide", "gate", "grid", "glow", "genius", "galaxy"],
+    "h": ["hub", "host", "hyper", "hive", "harmony", "hero"],
+    "l": ["link", "launch", "lab", "light", "lead", "logic", "loop"],
+    "m": ["make", "mesh", "meta", "mode", "matrix", "mind", "magic"],
+    "n": ["net", "node", "nexus", "next", "nova", "nano"],
+    "p": ["pulse", "path", "power", "prime", "pixel", "point", "portal"],
+    "q": ["quick", "quest", "quantum", "query"],
+    "r": ["rise", "reach", "run", "rhythm", "rocket", "real"],
+    "s": ["sync", "scale", "spark", "stream", "stack", "swift", "smart", "sphere"],
+    "t": ["tech", "team", "track", "trust", "true", "turbo", "tempo"],
+    "v": ["vibe", "vault", "vision", "vector", "venture", "velocity"],
+    "w": ["wave", "web", "work", "way", "wise", "wind"],
+    "z": ["zen", "zone", "zero", "zoom", "zap"]
+  },
+  "phonetic_clusters": {
+    "smooth": ["flow", "glow", "show", "grow", "snow", "slow"],
+    "sharp": ["snap", "crack", "spark", "quick", "zip", "zap"],
+    "soft": ["soft", "silk", "smooth", "gentle", "calm", "ease"],
+    "hard": ["rock", "steel", "iron", "strong", "solid", "firm"],
+    "liquid": ["wave", "flow", "stream", "pour", "liquid", "fluid"],
+    "aerial": ["sky", "cloud", "air", "wind", "fly", "soar"]
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "profanity": [
+    "damn", "hell", "crap", "stupid", "idiot", "dumb", "suck", "hate"
+  ],
+  "trademarked": [
+    "google", "facebook", "twitter", "amazon", "microsoft", "apple", "netflix",
+    "uber", "airbnb", "spotify", "youtube", "linkedin", "instagram", "snapchat",
+    "tiktok", "zoom", "slack", "dropbox", "salesforce", "oracle", "ibm", "intel",
+    "nvidia", "adobe", "paypal", "ebay", "yahoo", "reddit", "pinterest", "shopify"
+  ],
+  "generic": [
+    "test", "demo", "sample", "example", "temp", "temporary", "placeholder",
+    "untitled", "default", "admin", "administrator", "root", "system"
+  ],
+  "confusing": [
+    "null", "undefined", "nan", "error", "exception", "warning", "fatal",
+    "true", "false", "yes", "no", "zero", "one"
+  ],
+  "negative": [
+    "fail", "failure", "broken", "error", "bug", "crash", "dead", "death",
+    "kill", "destroy", "toxic", "spam", "scam", "fake", "fraud", "cheat"
+  ],
+  "sensitive": [
+    "sex", "porn", "drug", "weapon", "gun", "bomb", "terror", "violence",
+    "gambling", "casino", "bet", "weed", "cannabis", "alcohol", "beer", "wine"
+  ],
+  "medical": [
+    "doctor", "medicine", "drug", "pill", "prescription", "diagnosis",
+    "surgery", "hospital", "clinic", "therapy", "treatment"
+  ],
+  "financial": [
+    "bank", "loan", "credit", "debt", "mortgage", "insurance", "invest"
+  ],
+  "legal": [
+    "lawyer", "attorney", "legal", "court", "lawsuit", "sue"
+  ]
+}

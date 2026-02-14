@@ -1,0 +1,9 @@
+{
+  "articles": ["a", "an", "the"],
+  "pronouns": ["i", "you", "he", "she", "it", "we", "they", "me", "him", "her", "us", "them", "my", "your", "his", "its", "our", "their"],
+  "prepositions": ["of", "in", "to", "for", "with", "on", "at", "from", "by", "about", "as", "into", "like", "through", "after", "over", "between", "out", "against", "during", "without", "before", "under", "around", "among"],
+  "conjunctions": ["and", "but", "or", "nor", "so", "yet", "if", "because", "while", "although", "unless", "since", "when", "where", "whether"],
+  "auxiliaries": ["is", "am", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do", "does", "did", "will", "would", "shall", "should", "may", "might", "must", "can", "could"],
+  "common": ["this", "that", "these", "those", "what", "which", "who", "whom", "whose", "how", "why", "when", "where", "there", "here", "some", "any", "all", "each", "every", "both", "few", "many", "much", "more", "most", "other", "another", "such", "only", "own", "same", "than", "too", "very", "just", "now", "then", "once", "also", "well", "back", "even", "still", "just", "only", "again", "never", "always", "often", "sometimes"],
+  "domain_stopwords": ["website", "site", "page", "homepage", "portal", "online", "internet", "www", "http", "https", "com", "net", "org", "io", "app", "web"]
+}
