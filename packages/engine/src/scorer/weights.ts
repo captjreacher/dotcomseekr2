@@ -11,6 +11,11 @@ export const DEFAULT_WEIGHTS: ScoringWeights = {
 };
 
 export function applyWeights(scores: Record<string, number>, weights: ScoringWeights): number {
-  // TODO: Apply weights to calculate total score
-  return 0;
+  const total =
+    scores.pronounceability * weights.pronounceability +
+    scores.brandability * weights.brandability +
+    scores.semanticFit * weights.semanticFit +
+    scores.technicalQuality * weights.technicalQuality;
+
+  return Math.max(0, Math.min(100, total));
 }

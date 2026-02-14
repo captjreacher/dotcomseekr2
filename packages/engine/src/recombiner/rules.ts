@@ -22,6 +22,28 @@ export function isValidDomainName(name: string): boolean {
 }
 
 export function isPronounceab(name: string): boolean {
-  // TODO: Check pronounceability heuristics
+  // Must have at least one vowel
+  if (!/[aeiou]/.test(name)) {
+    return false;
+  }
+
+  // No more than 4 consecutive consonants
+  if (/[bcdfghjklmnpqrstvwxyz]{5,}/.test(name)) {
+    return false;
+  }
+
+  // No more than 3 consecutive vowels
+  if (/[aeiou]{4,}/.test(name)) {
+    return false;
+  }
+
+  // Check for difficult consonant clusters
+  const difficultClusters = ['bq', 'fq', 'gq', 'jq', 'kq', 'pq', 'vq', 'wq', 'xq', 'zq'];
+  for (const cluster of difficultClusters) {
+    if (name.includes(cluster)) {
+      return false;
+    }
+  }
+
   return true;
 }
