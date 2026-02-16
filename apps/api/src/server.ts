@@ -4,6 +4,7 @@ import { healthRoutes } from './routes/health';
 import { projectRoutes } from './routes/projects';
 import { expansionRoutes } from './routes/expansion';
 import { availabilityRoutes } from './routes/availability';
+import { orderRoutes } from './routes/orders';
 
 export async function createServer() {
   const server = Fastify({
@@ -30,6 +31,7 @@ export async function createServer() {
   await server.register(projectRoutes);
   await server.register(expansionRoutes);
   await server.register(availabilityRoutes);
+  await server.register(orderRoutes);
 
   return server;
 }

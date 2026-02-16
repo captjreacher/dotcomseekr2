@@ -36,7 +36,24 @@ export interface Candidate {
   score_brandability: number;
   score_semantic_fit: number;
   score_technical_quality: number;
+  availability_status?: string;
+  availability_data?: Record<string, unknown>;
   created_at: string;
+}
+
+export interface Order {
+  id: string;
+  project_id: string;
+  candidate_id: string;
+  user_id: string;
+  domain_name: string;
+  tld: string;
+  price_cents: number;
+  is_premium: boolean;
+  status: string;
+  registration_data: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
 }
 
 export const api = {
@@ -125,6 +142,44 @@ export const api = {
       }
     );
     if (!response.ok) throw new Error('Failed to check availability');
+    return response.json();
+  },
+
+  // Orders
+  async createOrder(data: {
+    projectId: string;
+    candidateId: string;
+    domainName: string;
+    tld: string;
+    priceCents: number;
+    isPremium: boolean;
+  }): Promise<Order> {
+    const response = await fetch(`${API_URL}/api/v1/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Failed to create order');
+    return response.json();
+  },
+
+  async getProjectOrders(projectId: string): Promise<Order[]> {
+    const response = await fetch(`${API_URL}/api/v1/projects/${projectId}/orders`);
+    if (!response.ok) throw new Error('Failed to fetch orders');
+    return response.json();
+  },
+
+  async getOrder(orderId: string): Promise<Order> {
+    const response = await fetch(`${API_URL}/api/v1/orders/${orderId}`);
+    if (!response.ok) throw new Error('Failed to fetch order');
+    return response.json();
+  },
+
+  async cancelOrder(orderId: string): Promise<Order> {
+    const response = await fetch(`${API_URL}/api/v1/orders/${orderId}/cancel`, {
+      method: 'POST',
+    });
+    if (!response.ok) throw new Error('Failed to cancel order');
     return response.json();
   },
 };
