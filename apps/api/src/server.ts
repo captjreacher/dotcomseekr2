@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import { healthRoutes } from './routes/health';
 import { projectRoutes } from './routes/projects';
 import { expansionRoutes } from './routes/expansion';
+import { availabilityRoutes } from './routes/availability';
 
 export async function createServer() {
   const server = Fastify({
@@ -28,6 +29,7 @@ export async function createServer() {
   await server.register(healthRoutes);
   await server.register(projectRoutes);
   await server.register(expansionRoutes);
+  await server.register(availabilityRoutes);
 
   return server;
 }

@@ -104,4 +104,27 @@ export const api = {
     if (!response.ok) throw new Error('Failed to fetch candidates');
     return response.json();
   },
+
+  // Availability
+  async checkAvailability(domain: string, tld = 'com') {
+    const response = await fetch(`${API_URL}/api/v1/availability/${domain}?tld=${tld}`);
+    if (!response.ok) throw new Error('Failed to check availability');
+    return response.json();
+  },
+
+  async checkProjectAvailability(
+    projectId: string,
+    options: { candidateIds?: string[]; limit?: number } = {}
+  ) {
+    const response = await fetch(
+      `${API_URL}/api/v1/projects/${projectId}/check-availability`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(options),
+      }
+    );
+    if (!response.ok) throw new Error('Failed to check availability');
+    return response.json();
+  },
 };
