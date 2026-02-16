@@ -18,6 +18,12 @@ export interface ExpansionOptions {
   strategies?: string[];
   enablePrefixes?: boolean;
   enableSuffixes?: boolean;
+  enableLLM?: boolean;
+  llmTopN?: number;
+  llmMode?: 'SAFE' | 'EXPLORATORY' | 'ADVENTUROUS';
+  llmTone?: 'TECHNICAL' | 'BRANDABLE' | 'PLAYFUL' | 'PROFESSIONAL' | 'MODERN';
+  llmMaxTokens?: number;
+  llmTimeout?: number;
 }
 
 export interface Candidate {
