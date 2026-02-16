@@ -1,11 +1,12 @@
 import { FastifyInstance } from 'fastify';
 import { getSupabaseClient } from '../services/supabase';
-import { DeterministicExpander, ExpansionStrategy } from '@dotcomseekr/engine';
+import { HybridExpander, ExpansionStrategy } from '@dotcomseekr/engine';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 
 const lexiconPath = join(process.cwd(), '../../../lexicon');
-const expander = new DeterministicExpander(lexiconPath);
+const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+const expander = new HybridExpander(lexiconPath, anthropicApiKey);
 
 // Initialize expander
 expander.initialize().catch((err) => {
@@ -22,12 +23,24 @@ export async function expansionRoutes(server: FastifyInstance) {
       strategies = Object.values(ExpansionStrategy),
       enablePrefixes = true,
       enableSuffixes = true,
+      enableLLM = false,
+      llmTopN = 10,
+      llmMode = 'EXPLORATORY',
+      llmTone = 'BRANDABLE',
+      llmMaxTokens = 1000,
+      llmTimeout = 10000,
     } = request.body as {
       maxDepth?: number;
       maxNodes?: number;
       strategies?: ExpansionStrategy[];
       enablePrefixes?: boolean;
       enableSuffixes?: boolean;
+      enableLLM?: boolean;
+      llmTopN?: number;
+      llmMode?: 'SAFE' | 'EXPLORATORY' | 'ADVENTUROUS';
+      llmTone?: 'TECHNICAL' | 'BRANDABLE' | 'PLAYFUL' | 'PROFESSIONAL' | 'MODERN';
+      llmMaxTokens?: number;
+      llmTimeout?: number;
     };
 
     const startTime = Date.now();
@@ -50,18 +63,38 @@ export async function expansionRoutes(server: FastifyInstance) {
         project_id: projectId,
         user_id: project.user_id,
         event_type: 'expansion_started',
-        payload: { maxDepth, maxNodes, strategies },
+        payload: {
+          maxDepth,
+          maxNodes,
+          strategies,
+          enableLLM,
+          llmTopN,
+          llmMode,
+          llmTone,
+        },
         success: true,
       });
 
-      // Run expansion
-      const result = await expander.expandWithOptions(project.initial_phrase, {
+      // Run expansion with hybrid options
+      const result = await expander.expand(project.initial_phrase, {
         maxDepth,
         maxNodes,
-        strategies,
+        deterministicStrategies: strategies,
         enablePrefixes,
         enableSuffixes,
+        enableLLM,
+        llmTopN,
+        llmMode: llmMode as any,
+        llmTone: llmTone as any,
+        llmMaxTokens,
+        llmTimeout,
       });
+
+      // Extract confidence scores from metadata
+      const confidenceScores = (result.metadata?.confidenceScores || {}) as Record<
+        string,
+        number
+      >;
 
       // Save graph nodes
       const nodeRecords = result.nodes.map((value, index) => ({
@@ -70,10 +103,12 @@ export async function expansionRoutes(server: FastifyInstance) {
         node_type: index === 0 ? 'phrase' : 'word',
         value,
         normalized_value: value.toLowerCase(),
-        semantic_weight: 0.5,
+        semantic_weight: confidenceScores[value] || 0.5,
         depth_level: 0, // TODO: Track actual depth from expansion
         is_terminal: false,
-        metadata: {},
+        metadata: confidenceScores[value]
+          ? { llmConfidence: confidenceScores[value], source: 'llm_enriched' }
+          : { source: 'deterministic' },
       }));
 
       if (nodeRecords.length > 0) {
@@ -118,6 +153,9 @@ export async function expansionRoutes(server: FastifyInstance) {
         payload: {
           totalNodes: result.nodes.length,
           totalEdges: result.edges.length,
+          deterministicNodes: result.metadata?.totalNodes || 0,
+          llmEnrichedNodes: result.metadata?.llmEnrichedNodes || 0,
+          llmEnabled: result.metadata?.llmEnabled || false,
           strategies,
         },
         success: true,
@@ -181,10 +219,10 @@ export async function expansionRoutes(server: FastifyInstance) {
         return reply.status(404).send({ error: 'Project not found' });
       }
 
-      // Get graph nodes
+      // Get graph nodes with metadata
       const { data: nodes, error: nodesError } = await supabase
         .from('graph_nodes')
-        .select('value')
+        .select('value, metadata')
         .eq('project_id', projectId);
 
       if (nodesError) {
@@ -193,6 +231,14 @@ export async function expansionRoutes(server: FastifyInstance) {
 
       if (!nodes || nodes.length === 0) {
         return reply.status(400).send({ error: 'No nodes found. Run expansion first.' });
+      }
+
+      // Build confidence map from node metadata
+      const confidenceMap = new Map<string, number>();
+      for (const node of nodes) {
+        if (node.metadata?.llmConfidence) {
+          confidenceMap.set(node.value, node.metadata.llmConfidence);
+        }
       }
 
       // Log recombination started
@@ -217,12 +263,17 @@ export async function expansionRoutes(server: FastifyInstance) {
         allowNumbers,
       });
 
-      // Score candidates
+      // Score candidates with confidence weighting
       const { DomainScorer } = await import('@dotcomseekr/engine');
       const scorer = new DomainScorer();
 
       const scoredCandidates = candidates.map((domain) => {
-        const scores = scorer.score(domain, project.initial_phrase);
+        // Use scoreWithConfidence if we have confidence data
+        const scores =
+          confidenceMap.size > 0
+            ? scorer.scoreWithConfidence(domain, project.initial_phrase, confidenceMap)
+            : scorer.score(domain, project.initial_phrase);
+
         return {
           id: randomUUID(),
           project_id: projectId,
@@ -235,7 +286,10 @@ export async function expansionRoutes(server: FastifyInstance) {
           score_brandability: scores.brandability,
           score_semantic_fit: scores.semanticFit,
           score_technical_quality: scores.technicalQuality,
-          scoring_metadata: {},
+          scoring_metadata:
+            confidenceMap.size > 0
+              ? { confidenceWeighted: true, confidenceNodes: confidenceMap.size }
+              : {},
           availability_status: 'unknown',
         };
       });

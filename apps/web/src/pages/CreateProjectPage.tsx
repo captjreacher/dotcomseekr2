@@ -16,6 +16,15 @@ function CreateProjectPage() {
     maxNodes: 500,
     enablePrefixes: true,
     enableSuffixes: true,
+    enableLLM: false,
+    llmTopN: 10,
+    llmMode: 'EXPLORATORY' as 'SAFE' | 'EXPLORATORY' | 'ADVENTUROUS',
+    llmTone: 'BRANDABLE' as
+      | 'TECHNICAL'
+      | 'BRANDABLE'
+      | 'PLAYFUL'
+      | 'PROFESSIONAL'
+      | 'MODERN',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -248,6 +257,146 @@ function CreateProjectPage() {
               <span>Enable morphological suffixes (ify, hub, kit, etc.)</span>
             </label>
           </div>
+        </section>
+
+        {/* LLM Enrichment Settings */}
+        <section style={{ marginBottom: '2rem' }}>
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>
+            LLM Enrichment (Optional)
+          </h2>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={expansionSettings.enableLLM}
+                onChange={(e) =>
+                  setExpansionSettings({
+                    ...expansionSettings,
+                    enableLLM: e.target.checked,
+                  })
+                }
+                style={{ marginRight: '0.5rem', width: '1.25rem', height: '1.25rem' }}
+              />
+              <span>Enable AI-powered semantic enrichment</span>
+            </label>
+            <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#888' }}>
+              Uses Claude AI to discover creative alternatives beyond the lexicon
+            </p>
+          </div>
+
+          {expansionSettings.enableLLM && (
+            <>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '1rem',
+                  marginBottom: '1rem',
+                }}
+              >
+                <div>
+                  <label
+                    htmlFor="llmMode"
+                    style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}
+                  >
+                    Exploration Mode
+                  </label>
+                  <select
+                    id="llmMode"
+                    value={expansionSettings.llmMode}
+                    onChange={(e) =>
+                      setExpansionSettings({
+                        ...expansionSettings,
+                        llmMode: e.target.value as any,
+                      })
+                    }
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      fontSize: '1rem',
+                      border: '1px solid #333',
+                      borderRadius: '4px',
+                      background: '#1a1a1a',
+                      color: '#fff',
+                    }}
+                  >
+                    <option value="SAFE">Safe - Conservative expansions</option>
+                    <option value="EXPLORATORY">Exploratory - Balanced creativity</option>
+                    <option value="ADVENTUROUS">Adventurous - Maximum creativity</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="llmTone"
+                    style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}
+                  >
+                    Tone
+                  </label>
+                  <select
+                    id="llmTone"
+                    value={expansionSettings.llmTone}
+                    onChange={(e) =>
+                      setExpansionSettings({
+                        ...expansionSettings,
+                        llmTone: e.target.value as any,
+                      })
+                    }
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      fontSize: '1rem',
+                      border: '1px solid #333',
+                      borderRadius: '4px',
+                      background: '#1a1a1a',
+                      color: '#fff',
+                    }}
+                  >
+                    <option value="TECHNICAL">Technical</option>
+                    <option value="BRANDABLE">Brandable</option>
+                    <option value="PLAYFUL">Playful</option>
+                    <option value="PROFESSIONAL">Professional</option>
+                    <option value="MODERN">Modern</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="llmTopN"
+                  style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}
+                >
+                  Top N Nodes to Enrich
+                </label>
+                <input
+                  id="llmTopN"
+                  type="number"
+                  min="5"
+                  max="50"
+                  value={expansionSettings.llmTopN}
+                  onChange={(e) =>
+                    setExpansionSettings({
+                      ...expansionSettings,
+                      llmTopN: parseInt(e.target.value),
+                    })
+                  }
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    fontSize: '1rem',
+                    border: '1px solid #333',
+                    borderRadius: '4px',
+                    background: '#1a1a1a',
+                    color: '#fff',
+                  }}
+                />
+                <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#888' }}>
+                  How many of the best nodes to send to AI for enrichment (5-50)
+                </p>
+              </div>
+            </>
+          )}
         </section>
 
         {/* Error Display */}

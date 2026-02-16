@@ -4,6 +4,7 @@ export * from './types';
 // Expander
 export * from './expander/IExpander';
 export * from './expander/DeterministicExpander';
+export * from './expander/HybridExpander';
 export * from './expander/LexiconLoader';
 export * from './expander/PhraseSplitter';
 
@@ -11,6 +12,7 @@ export * from './expander/PhraseSplitter';
 export * from './enricher/IEnricher';
 export * from './enricher/LLMEnricher';
 export * from './enricher/SemanticAnalyzer';
+export * from './enricher/schemas';
 
 // Graph
 export * from './graph/IGraphBuilder';
