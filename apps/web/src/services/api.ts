@@ -1,4 +1,17 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { API_URL, USE_EDGE_API, edgeFunctionUrl, edgeHeaders, requestJson } from '../lib/api';
+
+function edgeProjectsUrl(projectId?: string) {
+  const url = edgeFunctionUrl('dotcomseekr-projects');
+  return projectId ? `${url}?id=${encodeURIComponent(projectId)}` : url;
+}
+
+function edgeDomainSearch<T>(body: Record<string, unknown>) {
+  return requestJson<T>(edgeFunctionUrl('dotcomseekr-domain-search'), {
+    method: 'POST',
+    headers: edgeHeaders(),
+    body: JSON.stringify(body),
+  });
+}
 
 export interface Project {
   id: string;
@@ -12,7 +25,48 @@ export interface Project {
   updated_at: string;
 }
 
+interface EdgeProject {
+  id: string;
+  name: string;
+  description?: string | null;
+  status: string;
+  metadata?: {
+    initialPhrase?: string;
+    initial_phrase?: string;
+    settings?: Record<string, unknown>;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+interface EdgeDomainResult {
+  id: string;
+  search_id?: string;
+  domain: string;
+  available: boolean;
+  price?: number | null;
+  currency?: string;
+  provider?: string;
+  affiliate_url?: string | null;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+}
+
+interface EdgeDomainSearchResponse {
+  search: {
+    id: string;
+    project_id: string;
+    query: string;
+    tlds: string[];
+    provider: string;
+    status: string;
+    created_at: string;
+  };
+  results: EdgeDomainResult[];
+}
+
 export interface ExpansionOptions {
+  query?: string;
   maxDepth?: number;
   maxNodes?: number;
   strategies?: string[];
@@ -56,6 +110,62 @@ export interface Order {
   updated_at: string;
 }
 
+export interface ProjectGraph {
+  nodes: any[];
+  edges: any[];
+}
+
+function normalizeEdgeProject(project: EdgeProject): Project {
+  const initialPhrase = project.metadata?.initialPhrase || project.metadata?.initial_phrase || '';
+
+  return {
+    id: project.id,
+    user_id: 'edge',
+    name: project.name,
+    description: project.description || undefined,
+    initial_phrase: initialPhrase,
+    settings: project.metadata?.settings || {},
+    status: project.status,
+    created_at: project.created_at,
+    updated_at: project.updated_at,
+  };
+}
+
+function scoreDomain(domain: string, available: boolean) {
+  let hash = 0;
+  for (let i = 0; i < domain.length; i++) {
+    hash = (hash * 31 + domain.charCodeAt(i)) >>> 0;
+  }
+
+  return available ? 65 + (hash % 30) : 35 + (hash % 25);
+}
+
+function normalizeEdgeResult(result: EdgeDomainResult): Candidate {
+  const [domainName, tld = 'com'] = result.domain.split('.');
+  const score = scoreDomain(result.domain, result.available);
+
+  return {
+    id: result.id,
+    project_id: '',
+    domain_name: domainName,
+    tld,
+    score_total: score,
+    score_pronounceability: score,
+    score_brandability: score,
+    score_semantic_fit: score,
+    score_technical_quality: score,
+    availability_status: result.available ? 'available' : 'taken',
+    availability_data: {
+      provider: result.provider,
+      price: result.price,
+      currency: result.currency,
+      affiliateUrl: result.affiliate_url,
+      ...result.metadata,
+    },
+    created_at: result.created_at,
+  };
+}
+
 export const api = {
   // Projects
   async createProject(data: {
@@ -64,85 +174,135 @@ export const api = {
     initialPhrase: string;
     settings?: Record<string, unknown>;
   }): Promise<Project> {
-    const response = await fetch(`${API_URL}/api/v1/projects`, {
+    if (USE_EDGE_API) {
+      const project = await requestJson<EdgeProject>(edgeProjectsUrl(), {
+        method: 'POST',
+        headers: edgeHeaders(),
+        body: JSON.stringify(data),
+      });
+      return normalizeEdgeProject(project);
+    }
+
+    return requestJson<Project>(`${API_URL}/api/v1/projects`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!response.ok) throw new Error('Failed to create project');
-    return response.json();
   },
 
   async getProjects(): Promise<Project[]> {
-    const response = await fetch(`${API_URL}/api/v1/projects`);
-    if (!response.ok) throw new Error('Failed to fetch projects');
-    return response.json();
+    if (USE_EDGE_API) {
+      const projects = await requestJson<EdgeProject[]>(edgeProjectsUrl());
+      return projects.map(normalizeEdgeProject);
+    }
+
+    return requestJson<Project[]>(`${API_URL}/api/v1/projects`);
   },
 
   async getProject(id: string): Promise<Project> {
-    const response = await fetch(`${API_URL}/api/v1/projects/${id}`);
-    if (!response.ok) throw new Error('Failed to fetch project');
-    return response.json();
+    if (USE_EDGE_API) {
+      const project = await requestJson<EdgeProject>(edgeProjectsUrl(id));
+      return normalizeEdgeProject(project);
+    }
+
+    return requestJson<Project>(`${API_URL}/api/v1/projects/${id}`);
   },
 
   // Expansion
   async expand(projectId: string, options: ExpansionOptions = {}) {
-    const response = await fetch(`${API_URL}/api/v1/projects/${projectId}/expand`, {
+    if (USE_EDGE_API) {
+      return edgeDomainSearch({
+        projectId,
+        query: options.query,
+      });
+    }
+
+    return requestJson(`${API_URL}/api/v1/projects/${projectId}/expand`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(options),
     });
-    if (!response.ok) throw new Error('Failed to expand');
-    return response.json();
   },
 
   async recombine(projectId: string, options: Record<string, unknown> = {}) {
-    const response = await fetch(`${API_URL}/api/v1/projects/${projectId}/recombine`, {
+    if (USE_EDGE_API) {
+      return edgeDomainSearch({
+        projectId,
+        query: options.query,
+      });
+    }
+
+    return requestJson(`${API_URL}/api/v1/projects/${projectId}/recombine`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(options),
     });
-    if (!response.ok) throw new Error('Failed to recombine');
-    return response.json();
   },
 
   // Graph
-  async getGraph(projectId: string) {
-    const response = await fetch(`${API_URL}/api/v1/projects/${projectId}/graph`);
-    if (!response.ok) throw new Error('Failed to fetch graph');
-    return response.json();
+  async getGraph(projectId: string): Promise<ProjectGraph> {
+    if (USE_EDGE_API) {
+      return { nodes: [], edges: [] };
+    }
+
+    return requestJson<ProjectGraph>(`${API_URL}/api/v1/projects/${projectId}/graph`);
   },
 
   // Candidates
   async getCandidates(projectId: string, minScore = 0): Promise<Candidate[]> {
-    const response = await fetch(
+    if (USE_EDGE_API) {
+      const response = await edgeDomainSearch<EdgeDomainSearchResponse>({ projectId, query: '' });
+      return response.results
+        .map((result) => ({ ...normalizeEdgeResult(result), project_id: projectId }))
+        .filter((candidate) => candidate.score_total >= minScore);
+    }
+
+    return requestJson(
       `${API_URL}/api/v1/projects/${projectId}/candidates?minScore=${minScore}`
     );
-    if (!response.ok) throw new Error('Failed to fetch candidates');
-    return response.json();
   },
 
   // Availability
   async checkAvailability(domain: string, tld = 'com') {
-    const response = await fetch(`${API_URL}/api/v1/availability/${domain}?tld=${tld}`);
-    if (!response.ok) throw new Error('Failed to check availability');
-    return response.json();
+    if (USE_EDGE_API) {
+      const score = scoreDomain(`${domain}.${tld}`, true);
+      return {
+        domain: `${domain}.${tld}`,
+        available: true,
+        premium: false,
+        priceCents: tld === 'ai' ? 7900 : 1400,
+        score,
+      };
+    }
+
+    return requestJson(`${API_URL}/api/v1/availability/${domain}?tld=${tld}`);
   },
 
   async checkProjectAvailability(
     projectId: string,
     options: { candidateIds?: string[]; limit?: number } = {}
   ) {
-    const response = await fetch(
-      `${API_URL}/api/v1/projects/${projectId}/check-availability`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(options),
-      }
-    );
-    if (!response.ok) throw new Error('Failed to check availability');
-    return response.json();
+    if (USE_EDGE_API) return { checked: 0, available: 0, premium: 0 };
+
+    return requestJson(`${API_URL}/api/v1/projects/${projectId}/check-availability`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(options),
+    });
+  },
+
+  async searchDomains(projectId: string, query: string): Promise<Candidate[]> {
+    if (!USE_EDGE_API) {
+      await api.expand(projectId, { query });
+      await api.recombine(projectId, {});
+      return api.getCandidates(projectId);
+    }
+
+    const response = await edgeDomainSearch<EdgeDomainSearchResponse>({ projectId, query });
+    return response.results.map((result) => ({
+      ...normalizeEdgeResult(result),
+      project_id: projectId,
+    }));
   },
 
   // Orders

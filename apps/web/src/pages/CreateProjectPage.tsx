@@ -41,8 +41,8 @@ function CreateProjectPage() {
         settings: expansionSettings,
       });
 
-      // Trigger expansion
-      await api.expand(project.id, expansionSettings);
+      // Trigger the staging Edge search or the local Fastify expansion path.
+      await api.searchDomains(project.id, formData.initialPhrase);
 
       // Navigate to journey explorer
       navigate(`/project/${project.id}`);
