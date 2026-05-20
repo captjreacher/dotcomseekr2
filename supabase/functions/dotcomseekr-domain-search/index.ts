@@ -55,6 +55,22 @@ type RegistrarProvider = {
   checkDomains(domains: string[]): Promise<AvailabilityResult[]>;
 };
 
+type DynadotSearchResult = {
+  DomainName?: unknown;
+  Available?: unknown;
+  Price?: unknown;
+};
+
+type DynadotSearchResponse = {
+  SearchResponse?: {
+    ResponseCode?: unknown;
+    SearchResults?: unknown;
+    Error?: unknown;
+    ErrorMessage?: unknown;
+    Message?: unknown;
+  };
+};
+
 function corsHeaders(req: Request) {
   const origin = req.headers.get('origin') ?? '';
 
@@ -215,10 +231,6 @@ function hash(value: string) {
   return total;
 }
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 function buildNamecheapRegistrationUrl(pathDomain: string) {
   const url = new URL('https://www.namecheap.com/domains/registration/results/');
   url.searchParams.set('domain', pathDomain);
@@ -334,26 +346,6 @@ function parseNamecheapErrors(xml: string) {
   return [...xml.matchAll(/<Error[^>]*>([^<]+)<\/Error>/g)].map((match) => match[1]);
 }
 
-function decodeXml(value: string) {
-  return value
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'");
-}
-
-function tagValue(xml: string, tag: string) {
-  const match = xml.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i'));
-  return match ? decodeXml(match[1].trim()) : undefined;
-}
-
-function parseDynadotErrors(xml: string) {
-  return [...xml.matchAll(/<Error[^>]*>([\s\S]*?)<\/Error>/gi)].map((match) =>
-    decodeXml(match[1].trim())
-  );
-}
-
 function normalizeDynadotFallbackReason(message: string, status?: number) {
   const normalized = message.toLowerCase();
   if (status === 401 || status === 403 || normalized.includes('api key')) {
@@ -363,7 +355,7 @@ function normalizeDynadotFallbackReason(message: string, status?: number) {
     return 'Dynadot rate limit reached';
   }
   if (status && status >= 500) return `Dynadot endpoint unavailable: HTTP ${status}`;
-  if (message.includes('No Dynadot search results')) return 'Dynadot returned malformed XML';
+  if (message.includes('No Dynadot search results')) return 'Dynadot returned malformed JSON';
   return message;
 }
 
@@ -397,6 +389,49 @@ function parseDynadotPrice(rawPrice?: string) {
   };
 }
 
+function dynadotResponseMessage(searchResponse: DynadotSearchResponse['SearchResponse']) {
+  const candidates = [
+    searchResponse?.Error,
+    searchResponse?.ErrorMessage,
+    searchResponse?.Message,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) return candidate.trim();
+  }
+
+  return undefined;
+}
+
+function logDynadotFallback(reason: string, detail: Record<string, unknown>) {
+  console.warn(
+    'Dynadot availability fallback',
+    JSON.stringify({
+      reason,
+      ...detail,
+    })
+  );
+}
+
+function dynadotSearchResults(value: unknown): DynadotSearchResult[] | null {
+  if (!Array.isArray(value)) return null;
+
+  return value.filter(
+    (item): item is DynadotSearchResult => item !== null && typeof item === 'object'
+  );
+}
+
+function buildDynadotSearchUrl(endpoint: string, apiKey: string, domains: string[]) {
+  const params = new URLSearchParams();
+  params.set('key', apiKey);
+  params.set('command', 'search');
+  domains.forEach((domain, index) => params.set(`domain${index}`, domain));
+  params.set('show_price', '1');
+  params.set('currency', 'USD');
+
+  return `${endpoint}?${params.toString()}`;
+}
+
 function createDynadotProvider(fallbackProvider: RegistrarProvider): RegistrarProvider {
   const { config, hasApiKey, configError } = readDynadotConfig();
 
@@ -409,86 +444,148 @@ function createDynadotProvider(fallbackProvider: RegistrarProvider): RegistrarPr
     mode: config.sandbox ? 'sandbox' : 'live',
     async checkDomains(domains) {
       const endpoint = config.sandbox
-        ? 'https://api-sandbox.dynadot.com/api3.xml'
-        : 'https://api.dynadot.com/api3.xml';
-      const url = new URL(endpoint);
-
-      url.searchParams.set('key', config.apiKey!);
-      url.searchParams.set('command', 'search');
-      url.searchParams.set('show_price', '1');
-      url.searchParams.set('currency', 'USD');
+        ? 'https://api-sandbox.dynadot.com/api3.json'
+        : 'https://api.dynadot.com/api3.json';
 
       try {
         if (configError) {
+          logDynadotFallback(configError, { mode: config.sandbox ? 'sandbox' : 'live' });
           return checkFallbackProvider(fallbackProvider, domains, configError);
         }
 
         const checkedAt = new Date().toISOString();
-        const results: AvailabilityResult[] = [];
+        const response = await fetch(buildDynadotSearchUrl(endpoint, config.apiKey!, domains), {
+          method: 'GET',
+        });
 
-        for (const [index, domain] of domains.entries()) {
-          if (index > 0 && !config.sandbox) await sleep(1100);
+        if (!response.ok) {
+          const fallbackReason = normalizeDynadotFallbackReason(
+            `Dynadot HTTP ${response.status}`,
+            response.status
+          );
+          logDynadotFallback(fallbackReason, {
+            status: response.status,
+            mode: config.sandbox ? 'sandbox' : 'live',
+            requestedCount: domains.length,
+          });
+          return checkFallbackProvider(fallbackProvider, domains, fallbackReason);
+        }
 
-          url.searchParams.delete('domain0');
-          url.searchParams.set('domain0', domain);
+        let payload: DynadotSearchResponse;
+        try {
+          payload = (await response.json()) as DynadotSearchResponse;
+        } catch {
+          const fallbackReason = 'Dynadot returned invalid JSON';
+          logDynadotFallback(fallbackReason, {
+            status: response.status,
+            mode: config.sandbox ? 'sandbox' : 'live',
+            requestedCount: domains.length,
+          });
+          return checkFallbackProvider(fallbackProvider, domains, fallbackReason);
+        }
 
-          const response = await fetch(url.toString(), { method: 'GET' });
-          const xml = await response.text();
+        const searchResponse = payload.SearchResponse;
+        const responseCode =
+          searchResponse?.ResponseCode !== undefined && searchResponse.ResponseCode !== null
+            ? String(searchResponse.ResponseCode)
+            : undefined;
+        const responseMessage = dynadotResponseMessage(searchResponse);
 
-          if (!response.ok) {
-            const fallbackReason = normalizeDynadotFallbackReason(
-              `Dynadot HTTP ${response.status}`,
-              response.status
-            );
-            return checkFallbackProvider(fallbackProvider, domains, fallbackReason);
-          }
+        if (responseCode !== '0') {
+          const fallbackReason = normalizeDynadotFallbackReason(
+            responseMessage || `Dynadot returned ResponseCode ${responseCode ?? 'missing'}`,
+            response.status
+          );
+          logDynadotFallback(fallbackReason, {
+            status: response.status,
+            responseCode: responseCode ?? null,
+            responseMessage: responseMessage ?? null,
+            mode: config.sandbox ? 'sandbox' : 'live',
+            requestedCount: domains.length,
+          });
+          return checkFallbackProvider(fallbackProvider, domains, fallbackReason);
+        }
 
-          const errors = parseDynadotErrors(xml);
-          if (errors.length > 0) {
-            const fallbackReason = normalizeDynadotFallbackReason(errors[0], response.status);
-            return checkFallbackProvider(fallbackProvider, domains, fallbackReason);
-          }
+        const searchResults = dynadotSearchResults(searchResponse?.SearchResults);
+        if (!searchResults) {
+          const fallbackReason = 'Dynadot returned malformed JSON';
+          logDynadotFallback(fallbackReason, {
+            status: response.status,
+            responseCode,
+            mode: config.sandbox ? 'sandbox' : 'live',
+            requestedCount: domains.length,
+          });
+          return checkFallbackProvider(fallbackProvider, domains, fallbackReason);
+        }
 
-          const responseBlock = xml.match(/<SearchResponse[^>]*>([\s\S]*?)<\/SearchResponse>/i);
-          if (!responseBlock) {
-            const fallbackReason = normalizeDynadotFallbackReason('No Dynadot search results');
-            return checkFallbackProvider(fallbackProvider, domains, fallbackReason);
-          }
+        const byDomain = new Map(
+          searchResults
+            .filter((result) => typeof result.DomainName === 'string')
+            .map((result) => [String(result.DomainName).toLowerCase(), result])
+        );
 
-          const resultXml = tagValue(responseBlock[1], 'SearchHeader') ?? responseBlock[1];
-          const responseDomain = tagValue(resultXml, 'DomainName');
-          const successCode = tagValue(resultXml, 'SuccessCode');
-          const availableRaw = tagValue(resultXml, 'Available');
-          const priceRaw = tagValue(resultXml, 'Price');
+        const missingDomains = domains.filter((domain) => !byDomain.has(domain.toLowerCase()));
+        if (missingDomains.length > 0) {
+          const fallbackReason = 'Dynadot response omitted domain result';
+          logDynadotFallback(fallbackReason, {
+            status: response.status,
+            responseCode,
+            mode: config.sandbox ? 'sandbox' : 'live',
+            requestedCount: domains.length,
+            resultCount: searchResults.length,
+            missingCount: missingDomains.length,
+          });
+          return checkFallbackProvider(fallbackProvider, domains, fallbackReason);
+        }
 
-          if (responseDomain !== domain || successCode !== '0' || !availableRaw) {
-            const fallbackReason = 'Dynadot returned malformed XML';
-            return checkFallbackProvider(fallbackProvider, domains, fallbackReason);
-          }
+        const malformedCount = domains.filter((domain) => {
+          const result = byDomain.get(domain.toLowerCase());
+          return typeof result?.Available !== 'string';
+        }).length;
 
+        if (malformedCount > 0) {
+          const fallbackReason = 'Dynadot returned malformed domain result';
+          logDynadotFallback(fallbackReason, {
+            status: response.status,
+            responseCode,
+            mode: config.sandbox ? 'sandbox' : 'live',
+            requestedCount: domains.length,
+            resultCount: searchResults.length,
+            malformedCount,
+          });
+          return checkFallbackProvider(fallbackProvider, domains, fallbackReason);
+        }
+
+        return domains.map((domain) => {
+          const result = byDomain.get(domain.toLowerCase())!;
+          const domainName = String(result.DomainName);
+          const availableRaw = String(result.Available ?? '').toLowerCase();
+          const priceRaw = typeof result.Price === 'string' ? result.Price : undefined;
           const price = parseDynadotPrice(priceRaw);
 
-          results.push({
-            domain,
-            available: availableRaw.toLowerCase() === 'yes',
-            price: availableRaw.toLowerCase() === 'yes' ? price.price : null,
+          return {
+            domain: domainName,
+            available: availableRaw === 'yes',
+            price: availableRaw === 'yes' ? price.price : null,
             currency: price.currency,
             provider: 'dynadot',
             mode: config.sandbox ? 'sandbox' : 'live',
             checkedAt,
-            registrationUrl: buildDynadotRegistrationUrl(domain),
+            registrationUrl: buildDynadotRegistrationUrl(domainName),
             metadata: {
               premium: price.premium,
-              successCode,
+              responseCode,
               priceText: priceRaw,
             },
-          });
-        }
-
-        return results;
+          };
+        });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Dynadot request failed';
         const fallbackReason = normalizeDynadotFallbackReason(message);
+        logDynadotFallback(fallbackReason, {
+          mode: config.sandbox ? 'sandbox' : 'live',
+          requestedCount: domains.length,
+        });
         return checkFallbackProvider(fallbackProvider, domains, fallbackReason);
       }
     },
