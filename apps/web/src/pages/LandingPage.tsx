@@ -1,56 +1,86 @@
-import { Link } from 'react-router-dom';
+import { FormEvent, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const examples = [
+  'AI automation agency',
+  'bookkeeping app for tradies',
+  'gaming studio',
+  'health coaching platform',
+];
 
 function LandingPage() {
+  const navigate = useNavigate();
+  const [idea, setIdea] = useState('');
+
+  const startDiscovery = (event: FormEvent) => {
+    event.preventDefault();
+    const query = idea.trim();
+
+    if (query) {
+      navigate(`/create?idea=${encodeURIComponent(query)}`);
+    }
+  };
+
   return (
-    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
-      <header style={{ textAlign: 'center', marginBottom: '3rem' }}>
-        <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>
-          DotcomSeekr
-        </h1>
-        <p style={{ fontSize: '1.5rem', color: '#888', marginBottom: '2rem' }}>
-          Domain Intelligence Engine
+    <main className="page-shell landing-shell">
+      <nav className="top-nav" aria-label="Primary">
+        <span className="brand-mark">DotcomSeekr</span>
+        <button className="nav-link" onClick={() => navigate('/create')}>
+          Start naming
+        </button>
+      </nav>
+
+      <section className="hero-panel">
+        <p className="eyebrow">Premium domain discovery</p>
+        <h1>Find a name that feels ready to launch.</h1>
+        <p className="hero-copy">
+          We help founders discover memorable available domains. Start with an idea, not a
+          perfect name.
         </p>
-        <Link
-          to="/create"
-          style={{
-            display: 'inline-block',
-            padding: '1rem 2rem',
-            fontSize: '1.125rem',
-            fontWeight: 'bold',
-            background: '#0066ff',
-            color: '#fff',
-            textDecoration: 'none',
-            borderRadius: '4px',
-          }}
-        >
-          Create New Project
-        </Link>
-      </header>
 
-      <main>
-        <section style={{ marginBottom: '2rem' }}>
-          <h2 style={{ marginBottom: '1rem' }}>
-            Semantic Graph-Powered Domain Discovery
-          </h2>
-          <p style={{ color: '#aaa', lineHeight: '1.6' }}>
-            DotcomSeekr is a pure SaaS domain intelligence platform that combines
-            deterministic lexicon expansion with AI enrichment to discover perfect
-            domain names through semantic graph traversal.
-          </p>
-        </section>
+        <form className="hero-search" onSubmit={startDiscovery}>
+          <label htmlFor="idea">What are you building?</label>
+          <div className="hero-input-row">
+            <input
+              id="idea"
+              value={idea}
+              onChange={(event) => setIdea(event.target.value)}
+              placeholder="AI automation agency"
+              autoComplete="off"
+            />
+            <button type="submit" disabled={!idea.trim()}>
+              Discover names
+            </button>
+          </div>
+        </form>
 
-        <section>
-          <h3 style={{ marginBottom: '1rem' }}>Features</h3>
-          <ul style={{ color: '#aaa', lineHeight: '2' }}>
-            <li>🧠 Hybrid intelligence: Deterministic + LLM enrichment</li>
-            <li>🕸️ Persisted semantic graph traversal</li>
-            <li>🎯 Advanced domain scoring and grouping</li>
-            <li>📊 Interactive journey exploration</li>
-            <li>🔍 Branch expansion from any node</li>
-          </ul>
-        </section>
-      </main>
-    </div>
+        <div className="example-row" aria-label="Example ideas">
+          {examples.map((example) => (
+            <button key={example} type="button" onClick={() => setIdea(example)}>
+              {example}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="promise-grid" aria-label="How DotcomSeekr helps">
+        <article>
+          <span>01</span>
+          <h2>Describe the idea</h2>
+          <p>Tell us the business, audience, or vibe. Plain language is enough.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h2>Get curated options</h2>
+          <p>We turn raw availability checks into a focused set of brandable suggestions.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h2>Shortlist with confidence</h2>
+          <p>Save names that feel right and move toward registration when you are ready.</p>
+        </article>
+      </section>
+    </main>
   );
 }
 

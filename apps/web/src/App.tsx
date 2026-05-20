@@ -10,6 +10,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/create" element={<CreateProjectPage />} />
+        <Route path="/ideas/:id" element={<JourneyExplorerPage />} />
         <Route path="/project/:id" element={<JourneyExplorerPage />} />
         <Route path="/health-test" element={<HealthTestPage />} />
       </Routes>
