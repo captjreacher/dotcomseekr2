@@ -167,6 +167,12 @@ h3 {
   gap: 10px;
 }
 
+.optional-fields {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
 input,
 textarea {
   width: 100%;
@@ -236,6 +242,7 @@ textarea:focus {
 .example-row,
 .tag-row,
 .shortlist-row,
+.chip-group,
 .card-actions,
 .card-topline {
   display: flex;
@@ -253,6 +260,32 @@ textarea:focus {
   padding: 9px 13px;
   background: rgba(255, 255, 255, 0.045);
   color: #c9d0d8;
+}
+
+.chip-group {
+  align-items: center;
+  margin-top: 14px;
+}
+
+.chip-group span {
+  width: 74px;
+  color: #9fa8b4;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.chip-group button {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.045);
+  color: #c9d0d8;
+}
+
+.chip-group button.active {
+  border-color: rgba(143, 184, 255, 0.55);
+  background: rgba(143, 184, 255, 0.14);
+  color: #eef5ff;
 }
 
 .promise-grid {
@@ -436,6 +469,30 @@ textarea:focus {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
+}
+
+.strategy-group {
+  margin-top: 28px;
+}
+
+.strategy-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.strategy-heading h3 {
+  margin: 0;
+  font-size: 1.08rem;
+}
+
+.strategy-heading span {
+  color: #99a2af;
+  font-weight: 700;
 }
 
 .domain-card {

@@ -5,10 +5,19 @@ import { api, Candidate, Project } from '../services/api';
 type MatchTier = 'Premium Pick' | 'Recommended' | 'Strong Match';
 
 const loadingSteps = [
-  'Analyzing brand direction...',
-  'Finding strong domain patterns...',
+  'Reading the seed keyword...',
+  'Generating smart permutations...',
   'Checking availability...',
   'Curating recommendations...',
+];
+
+const strategyOrder = [
+  'Exact match',
+  'Prefix ideas',
+  'Suffix ideas',
+  'Related-word ideas',
+  'Brandable wordplay',
+  'Premium/startup style',
 ];
 
 function JourneyExplorerPage() {
@@ -47,6 +56,8 @@ function JourneyExplorerPage() {
     () => [...suggestions].sort((a, b) => b.score_total - a.score_total),
     [suggestions]
   );
+
+  const groupedSuggestions = useMemo(() => groupByStrategy(topSuggestions), [topSuggestions]);
 
   const savedSuggestions = topSuggestions.filter((candidate) => saved.includes(candidate.id));
 
@@ -140,12 +151,12 @@ function JourneyExplorerPage() {
           <p className="eyebrow">Curated suggestions</p>
           <h1>{brandIdea.name}</h1>
           <p>
-            Based on: <strong>{brandIdea.initial_phrase || 'your brand idea'}</strong>
+            Seed keyword: <strong>{brandIdea.initial_phrase || 'your keyword'}</strong>
           </p>
         </div>
         <div className="confidence-card">
           <span>{topSuggestions.length}</span>
-          <p>available patterns reviewed</p>
+          <p>domain candidates checked</p>
         </div>
       </section>
 
@@ -153,7 +164,7 @@ function JourneyExplorerPage() {
         <input
           value={refineQuery}
           onChange={(event) => setRefineQuery(event.target.value)}
-          placeholder="Refine the idea or try another angle"
+          placeholder="Try another keyword or phrase"
           disabled={generating}
         />
         <button type="submit" disabled={generating || !refineQuery.trim()}>
@@ -188,26 +199,38 @@ function JourneyExplorerPage() {
 
       <section className="suggestions-section">
         <div className="section-heading">
-          <p className="eyebrow">Best options first</p>
-          <h2>Recommended domains</h2>
+          <p className="eyebrow">Naming strategies</p>
+          <h2>Recommended domains by strategy</h2>
         </div>
 
         {topSuggestions.length > 0 ? (
-          <div className="suggestion-grid">
-            {topSuggestions.map((candidate, index) => (
-              <DomainSuggestionCard
-                key={candidate.id}
-                candidate={candidate}
-                index={index}
-                saved={saved.includes(candidate.id)}
-                onToggleSaved={() => toggleSaved(candidate.id)}
-              />
-            ))}
-          </div>
+          groupedSuggestions.map((group) => (
+            <section className="strategy-group" key={group.label}>
+              <div className="strategy-heading">
+                <h3>{group.label}</h3>
+                <span>{group.items.length}</span>
+              </div>
+              <div className="suggestion-grid">
+                {group.items.map((candidate, index) => {
+                  const globalIndex = topSuggestions.findIndex((item) => item.id === candidate.id);
+
+                  return (
+                    <DomainSuggestionCard
+                      key={candidate.id}
+                      candidate={candidate}
+                      index={globalIndex < 0 ? index : globalIndex}
+                      saved={saved.includes(candidate.id)}
+                      onToggleSaved={() => toggleSaved(candidate.id)}
+                    />
+                  );
+                })}
+              </div>
+            </section>
+          ))
         ) : (
           <div className="empty-state">
             <h2>No suggestions yet</h2>
-            <p>Refresh the idea above and we will generate a focused set of options.</p>
+            <p>Refresh the keyword above and we will generate a focused set of options.</p>
           </div>
         )}
       </section>
@@ -228,10 +251,11 @@ function DomainSuggestionCard({
 }) {
   const domain = formatDomain(candidate);
   const tier = getTier(candidate, index);
-  const availability = candidate.availability_status === 'available' ? 'Available' : 'Worth checking';
+  const availability =
+    candidate.availability_status === 'available' ? 'Available' : 'Worth checking';
   const tags = getTags(candidate, tier);
   const rationale = getRationale(candidate, tier);
-  const purchaseUrl = getPurchaseUrl(candidate);
+  const registrationUrl = getRegistrationUrl(candidate);
 
   return (
     <article className={`domain-card ${index === 0 ? 'featured' : ''}`}>
@@ -250,9 +274,14 @@ function DomainSuggestionCard({
       </div>
 
       <div className="card-actions">
-        {purchaseUrl ? (
-          <a href={purchaseUrl} target="_blank" rel="noreferrer" className="primary-action compact">
-            Register
+        {registrationUrl ? (
+          <a
+            href={registrationUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="primary-action compact"
+          >
+            View registration options
           </a>
         ) : (
           <button className="primary-action compact" type="button">
@@ -279,17 +308,23 @@ function getTier(candidate: Candidate, index: number): MatchTier {
 
 function getTags(candidate: Candidate, tier: MatchTier) {
   const tags = new Set<string>();
+  const strategy = getStrategyLabel(candidate);
   tags.add(tier === 'Premium Pick' ? 'Premium Feel' : 'Strong Match');
 
+  if (strategy) tags.add(strategy);
   if (candidate.domain_name.length <= 12) tags.add('Clean & Memorable');
   if (candidate.tld === 'com') tags.add('Classic .com');
   if (candidate.tld === 'ai') tags.add('AI Friendly');
-  tags.add('Brandable');
 
   return [...tags].slice(0, 4);
 }
 
 function getRationale(candidate: Candidate, tier: MatchTier) {
+  const metadataRationale = candidate.availability_data?.rationale;
+  if (typeof metadataRationale === 'string' && metadataRationale) {
+    return metadataRationale;
+  }
+
   if (tier === 'Premium Pick') {
     return 'A polished lead option with a clear startup feel and easy recall.';
   }
@@ -305,9 +340,31 @@ function getRationale(candidate: Candidate, tier: MatchTier) {
   return 'A concise alternative that keeps the idea flexible and easy to say.';
 }
 
-function getPurchaseUrl(candidate: Candidate) {
-  const value = candidate.availability_data?.affiliateUrl;
+function getRegistrationUrl(candidate: Candidate) {
+  const value = candidate.availability_data?.registrationUrl;
   return typeof value === 'string' ? value : '';
+}
+
+function getStrategyLabel(candidate: Candidate) {
+  const value = candidate.availability_data?.strategyLabel;
+  return typeof value === 'string' ? value : '';
+}
+
+function groupByStrategy(candidates: Candidate[]) {
+  const groups = new Map<string, Candidate[]>();
+
+  for (const candidate of candidates) {
+    const label = getStrategyLabel(candidate) || 'Recommended';
+    groups.set(label, [...(groups.get(label) ?? []), candidate]);
+  }
+
+  return [...groups.entries()]
+    .map(([label, items]) => ({ label, items }))
+    .sort((a, b) => {
+      const aIndex = strategyOrder.includes(a.label) ? strategyOrder.indexOf(a.label) : 999;
+      const bIndex = strategyOrder.includes(b.label) ? strategyOrder.indexOf(b.label) : 999;
+      return aIndex - bIndex;
+    });
 }
 
 export default JourneyExplorerPage;

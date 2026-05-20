@@ -377,7 +377,7 @@ npm run build
 
 ## Roadmap
 
-- [ ] Real domain registration (Namecheap, GoDaddy API)
+- [ ] Registrar-neutral domain registration options
 - [ ] Stripe payment integration
 - [ ] User authentication (Supabase Auth)
 - [ ] Domain monitoring and alerts

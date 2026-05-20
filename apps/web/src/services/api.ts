@@ -47,6 +47,7 @@ interface EdgeDomainResult {
   price?: number | null;
   currency?: string;
   provider?: string;
+  registrationUrl?: string | null;
   affiliate_url?: string | null;
   metadata?: Record<string, unknown>;
   created_at: string;
@@ -67,6 +68,9 @@ interface EdgeDomainSearchResponse {
 
 export interface ExpansionOptions {
   query?: string;
+  industry?: string;
+  tone?: string;
+  tlds?: string[];
   maxDepth?: number;
   maxNodes?: number;
   strategies?: string[];
@@ -140,9 +144,18 @@ function scoreDomain(domain: string, available: boolean) {
   return available ? 65 + (hash % 30) : 35 + (hash % 25);
 }
 
+function hideProviderMetadata(metadata: Record<string, unknown> = {}) {
+  const neutralMetadata = { ...metadata };
+  delete neutralMetadata.provider;
+  delete neutralMetadata.mode;
+  delete neutralMetadata.fallbackReason;
+  return neutralMetadata;
+}
+
 function normalizeEdgeResult(result: EdgeDomainResult): Candidate {
   const [domainName, tld = 'com'] = result.domain.split('.');
   const score = scoreDomain(result.domain, result.available);
+  const metadata = hideProviderMetadata(result.metadata);
 
   return {
     id: result.id,
@@ -156,11 +169,10 @@ function normalizeEdgeResult(result: EdgeDomainResult): Candidate {
     score_technical_quality: score,
     availability_status: result.available ? 'available' : 'taken',
     availability_data: {
-      provider: result.provider,
       price: result.price,
       currency: result.currency,
-      affiliateUrl: result.affiliate_url,
-      ...result.metadata,
+      registrationUrl: result.registrationUrl || result.affiliate_url,
+      ...metadata,
     },
     created_at: result.created_at,
   };
@@ -214,6 +226,9 @@ export const api = {
       return edgeDomainSearch({
         projectId,
         query: options.query,
+        industry: options.industry,
+        tone: options.tone,
+        tlds: options.tlds,
       });
     }
 
@@ -229,6 +244,9 @@ export const api = {
       return edgeDomainSearch({
         projectId,
         query: options.query,
+        industry: options.industry,
+        tone: options.tone,
+        tlds: options.tlds,
       });
     }
 
@@ -257,9 +275,7 @@ export const api = {
         .filter((candidate) => candidate.score_total >= minScore);
     }
 
-    return requestJson(
-      `${API_URL}/api/v1/projects/${projectId}/candidates?minScore=${minScore}`
-    );
+    return requestJson(`${API_URL}/api/v1/projects/${projectId}/candidates?minScore=${minScore}`);
   },
 
   // Availability
@@ -291,14 +307,22 @@ export const api = {
     });
   },
 
-  async searchDomains(projectId: string, query: string): Promise<Candidate[]> {
+  async searchDomains(
+    projectId: string,
+    query: string,
+    options: { industry?: string; tone?: string; tlds?: string[] } = {}
+  ): Promise<Candidate[]> {
     if (!USE_EDGE_API) {
-      await api.expand(projectId, { query });
+      await api.expand(projectId, { query, ...options });
       await api.recombine(projectId, {});
       return api.getCandidates(projectId);
     }
 
-    const response = await edgeDomainSearch<EdgeDomainSearchResponse>({ projectId, query });
+    const response = await edgeDomainSearch<EdgeDomainSearchResponse>({
+      projectId,
+      query,
+      ...options,
+    });
     return response.results.map((result) => ({
       ...normalizeEdgeResult(result),
       project_id: projectId,

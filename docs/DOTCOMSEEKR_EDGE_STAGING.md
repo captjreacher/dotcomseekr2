@@ -19,13 +19,19 @@ Hosted Supabase Edge Functions provide `SUPABASE_URL`. The functions also need a
 supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<SERVICE_ROLE_KEY> --project-ref jqfodlzcsgfocyuawzyx
 ```
 
-Optional future live availability provider:
+Preferred live availability provider:
+
+```bash
+supabase secrets set DYNADOT_API_KEY=<VALUE> --project-ref jqfodlzcsgfocyuawzyx
+```
+
+Optional fallback live availability provider:
 
 ```bash
 supabase secrets set NAMECHEAP_API_KEY=<VALUE> --project-ref jqfodlzcsgfocyuawzyx
 ```
 
-When no provider key is configured, domain availability is deterministic mock data.
+When no live provider key is configured, domain availability is deterministic mock data.
 
 ## Deploy Commands
 

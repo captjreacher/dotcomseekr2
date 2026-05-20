@@ -3,8 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 
 const progressSteps = [
-  'Analyzing brand direction...',
-  'Finding strong domain patterns...',
+  'Reading the seed keyword...',
+  'Generating smart permutations...',
   'Checking availability...',
   'Curating the best matches...',
 ];
@@ -13,6 +13,12 @@ function CreateProjectPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [idea, setIdea] = useState(searchParams.get('idea') || '');
+  const [industry, setIndustry] = useState(searchParams.get('industry') || '');
+  const [tone, setTone] = useState(searchParams.get('tone') || 'clean');
+  const selectedTlds = (searchParams.get('tlds') || 'com,ai,io')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
   const [brandName, setBrandName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -41,12 +47,16 @@ function CreateProjectPage() {
     try {
       const project = await api.createProject({
         name: brandName.trim() || trimmedIdea,
-        description: 'Brand idea created in DotcomSeekr',
+        description: 'Seed keyword created in DotcomSeekr',
         initialPhrase: trimmedIdea,
-        settings: { source: 'guided-discovery' },
+        settings: { source: 'keyword-discovery', industry, tone, tlds: selectedTlds },
       });
 
-      await api.searchDomains(project.id, trimmedIdea);
+      await api.searchDomains(project.id, trimmedIdea, {
+        industry,
+        tone,
+        tlds: selectedTlds,
+      });
       navigate(`/ideas/${project.id}`);
     } catch (err: any) {
       setError(err.message || 'We could not generate suggestions. Please try again.');
@@ -63,23 +73,41 @@ function CreateProjectPage() {
       <section className="create-layout">
         <div className="create-copy">
           <p className="eyebrow">Guided discovery</p>
-          <h1>Start with the idea. We will shape the naming direction.</h1>
+          <h1>Start with a seed word. We will explore the naming territory.</h1>
           <p>
-            Describe what you are building in a sentence or two. DotcomSeekr will look for
-            clean, memorable domains and surface the strongest options first.
+            Enter one word or phrase. DotcomSeekr will try exact matches, useful modifiers,
+            related concepts, and brandable variants before checking availability.
           </p>
         </div>
 
         <form className="discovery-form" onSubmit={handleSubmit}>
-          <label htmlFor="idea">What are you building?</label>
+          <label htmlFor="idea">Start with a keyword</label>
           <textarea
             id="idea"
             value={idea}
             onChange={(event) => setIdea(event.target.value)}
-            placeholder="A modern bookkeeping app for trade businesses"
-            rows={5}
+            placeholder="agent"
+            rows={3}
             disabled={loading}
             required
+          />
+
+          <label htmlFor="industry">Industry / use case</label>
+          <input
+            id="industry"
+            value={industry}
+            onChange={(event) => setIndustry(event.target.value)}
+            placeholder="Optional"
+            disabled={loading}
+          />
+
+          <label htmlFor="tone">Tone</label>
+          <input
+            id="tone"
+            value={tone}
+            onChange={(event) => setTone(event.target.value)}
+            placeholder="clean, premium, playful, technical, bold"
+            disabled={loading}
           />
 
           <label htmlFor="brandName">Working name, if you have one</label>
