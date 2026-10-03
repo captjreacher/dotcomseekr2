@@ -1,6 +1,9 @@
 // Main engine exports
 export * from './types';
 
+// Runtime-neutral deterministic generation core (shared with Supabase Edge)
+export * from './generation';
+
 // Expander
 export * from './expander/IExpander';
 export * from './expander/DeterministicExpander';

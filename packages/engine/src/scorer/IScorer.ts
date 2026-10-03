@@ -1,4 +1,4 @@
-import { DomainScore } from '@dotcomseekr/shared';
+import type { DomainScore } from '@dotcomseekr/shared';
 
 /**
  * Interface for domain quality scoring

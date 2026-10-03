@@ -1,4 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  GENERATION_STRATEGIES,
+  generateDomainCandidates,
+  type GenerationCandidate,
+  type GenerationStrategy,
+} from '../_shared/generation.ts';
 
 const allowedOrigins = new Set([
   'http://localhost:5173',
@@ -7,30 +13,6 @@ const allowedOrigins = new Set([
 const defaultTlds = ['com', 'ai', 'io', 'co'];
 const allowedTlds = new Set(['com', 'ai', 'io', 'co', 'net', 'org']);
 const maxDomainsPerSearch = 36;
-
-type CandidateStrategy =
-  | 'exact'
-  | 'prefix'
-  | 'suffix'
-  | 'related'
-  | 'wordplay'
-  | 'premium';
-
-type DomainCandidate = {
-  label: string;
-  strategy: CandidateStrategy;
-  strategyLabel: string;
-  rationale: string;
-};
-
-const candidateStrategyOrder: CandidateStrategy[] = [
-  'exact',
-  'prefix',
-  'suffix',
-  'related',
-  'wordplay',
-  'premium',
-];
 
 type ProviderMode = 'sandbox' | 'live' | 'mock';
 type ProviderName = 'mock' | 'namecheap' | 'dynadot';
@@ -106,21 +88,6 @@ function getClient() {
   });
 }
 
-function normalizeLabel(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '')
-    .slice(0, 48);
-}
-
-function normalizeWords(value: string) {
-  return value
-    .toLowerCase()
-    .split(/[^a-z0-9]+/g)
-    .map((word) => word.trim())
-    .filter(Boolean);
-}
-
 function parseTlds(rawTlds: unknown) {
   const requested = Array.isArray(rawTlds)
     ? rawTlds
@@ -133,94 +100,6 @@ function parseTlds(rawTlds: unknown) {
     .filter((value) => allowedTlds.has(value));
 
   return [...new Set(clean)].slice(0, 6);
-}
-
-function strategyLabel(strategy: CandidateStrategy) {
-  switch (strategy) {
-    case 'exact':
-      return 'Exact match';
-    case 'prefix':
-      return 'Prefix ideas';
-    case 'suffix':
-      return 'Suffix ideas';
-    case 'related':
-      return 'Related-word ideas';
-    case 'wordplay':
-      return 'Brandable wordplay';
-    case 'premium':
-      return 'Premium/startup style';
-  }
-}
-
-function relatedTerms(seed: string, industry: string) {
-  const relatedBySeed: Record<string, string[]> = {
-    agent: ['operator', 'proxy', 'delegate', 'copilot'],
-    automation: ['workflow', 'autopilot', 'sequence', 'process'],
-    tradie: ['craft', 'crew', 'jobsite', 'toolbox'],
-    ledger: ['books', 'balance', 'record', 'vault'],
-    groovy: ['vibe', 'rhythm', 'spark', 'jam'],
-    finance: ['ledger', 'capital', 'balance', 'vault'],
-    ai: ['agent', 'model', 'neural', 'prompt'],
-  };
-
-  const industryWords = normalizeWords(industry);
-  const industryHints = industryWords.flatMap((word) => relatedBySeed[word] ?? [word]);
-  return [...new Set([...(relatedBySeed[seed] ?? []), ...industryHints])].slice(0, 4);
-}
-
-function withoutVowels(value: string) {
-  const head = value.slice(0, 1);
-  const tail = value.slice(1).replace(/[aeiou]/g, '');
-  return `${head}${tail}`;
-}
-
-function buildDomainCandidates(query: string, industry = '', tone = '') {
-  const words = normalizeWords(query);
-  const seed = words[0] ?? normalizeLabel(query);
-  const compact = normalizeLabel(query);
-  const candidates: DomainCandidate[] = [];
-  const seen = new Set<string>();
-
-  function add(label: string, strategy: CandidateStrategy, rationale: string) {
-    const clean = normalizeLabel(label);
-    if (!clean || clean.length < 3 || seen.has(clean)) return;
-    seen.add(clean);
-    candidates.push({
-      label: clean,
-      strategy,
-      strategyLabel: strategyLabel(strategy),
-      rationale,
-    });
-  }
-
-  add(compact || seed, 'exact', 'Uses your seed word directly');
-
-  ['get', 'try', 'go', 'use'].forEach((prefix) => {
-    add(`${prefix}${seed}`, 'prefix', `Adds the "${prefix}" prefix for a clearer action cue`);
-  });
-
-  ['hub', 'labs', 'works', 'flow', 'base'].forEach((suffix) => {
-    add(`${seed}${suffix}`, 'suffix', 'Adds an action-oriented suffix');
-  });
-
-  relatedTerms(seed, industry).forEach((related) => {
-    add(related, 'related', 'Related concept with stronger brand feel');
-    add(`${related}${seed}`, 'related', 'Combines a related concept with your seed word');
-  });
-
-  add(withoutVowels(seed), 'wordplay', 'Shorter, more startup-friendly variant');
-  add(`${seed}ly`, 'wordplay', 'Softens the seed word into a brandable name');
-  add(`${seed}ify`, 'wordplay', 'Turns the seed word into a playful product-style name');
-
-  const premiumSuffixes = tone.toLowerCase().includes('premium')
-    ? ['capital', 'prime', 'vault']
-    : ['studio', 'forge', 'nova'];
-
-  premiumSuffixes.forEach((suffix) => {
-    add(`${seed}${suffix}`, 'premium', 'Frames the seed word with a polished startup feel');
-  });
-
-  return candidates.slice(0, 18);
 }
 
 function hash(value: string) {
@@ -682,8 +561,8 @@ function withRegistrationUrls(results: Array<Record<string, unknown>>) {
   }));
 }
 
-function domainMetadataByName(candidates: DomainCandidate[], selectedTlds: string[]) {
-  const metadata = new Map<string, DomainCandidate>();
+function domainMetadataByName(candidates: GenerationCandidate[], selectedTlds: string[]) {
+  const metadata = new Map<string, GenerationCandidate>();
 
   for (const candidate of candidates) {
     for (const tld of selectedTlds) {
@@ -694,20 +573,20 @@ function domainMetadataByName(candidates: DomainCandidate[], selectedTlds: strin
   return metadata;
 }
 
-function domainsToCheck(candidates: DomainCandidate[], selectedTlds: string[]) {
-  const byStrategy = new Map<CandidateStrategy, DomainCandidate[]>();
+function domainsToCheck(candidates: GenerationCandidate[], selectedTlds: string[]) {
+  const byStrategy = new Map<GenerationStrategy, GenerationCandidate[]>();
 
   for (const candidate of candidates) {
     byStrategy.set(candidate.strategy, [...(byStrategy.get(candidate.strategy) ?? []), candidate]);
   }
 
-  const orderedCandidates: DomainCandidate[] = [];
+  const orderedCandidates: GenerationCandidate[] = [];
   let offset = 0;
 
   while (orderedCandidates.length < candidates.length) {
     let added = false;
 
-    for (const strategy of candidateStrategyOrder) {
+    for (const strategy of GENERATION_STRATEGIES) {
       const candidate = byStrategy.get(strategy)?.[offset];
       if (candidate) {
         orderedCandidates.push(candidate);
@@ -768,14 +647,19 @@ Deno.serve(async (req) => {
       return json(req, data);
     }
 
-    const labels = buildDomainCandidates(query, industry, tone);
-    if (labels.length === 0) {
+    const candidates = generateDomainCandidates({
+      seed: query,
+      useCase: industry,
+      tone,
+      maxCandidates: 250,
+    });
+    if (candidates.length === 0) {
       return json(req, { error: 'query must contain a valid domain label' }, 400);
     }
 
     const provider = createPreferredProvider();
-    const domains = domainsToCheck(labels, tlds);
-    const metadataByDomain = domainMetadataByName(labels, tlds);
+    const domains = domainsToCheck(candidates, tlds);
+    const metadataByDomain = domainMetadataByName(candidates, tlds);
     const availabilityResults = await provider.checkDomains(domains);
     const firstProvider = availabilityResults[0]?.provider ?? 'mock';
     const providerName = availabilityResults.every((result) => result.provider === firstProvider)
@@ -806,7 +690,7 @@ Deno.serve(async (req) => {
           source: 'dotcomseekr-edge',
           industry,
           tone,
-          candidateCount: labels.length,
+          candidateCount: candidates.length,
           ...providerMetadata,
         },
       })
@@ -831,6 +715,10 @@ Deno.serve(async (req) => {
           strategy: candidate?.strategy,
           strategyLabel: candidate?.strategyLabel,
           rationale: candidate?.rationale,
+          sourceTerm: candidate?.sourceTerm,
+          score: candidate?.score?.total,
+          scoreComponents: candidate?.scoreComponents,
+          provenance: candidate?.provenance,
           seedQuery: query,
           industry,
           tone,

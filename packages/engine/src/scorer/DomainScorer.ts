@@ -1,10 +1,10 @@
-import { IScorer } from './IScorer';
-import { DomainScore } from '@dotcomseekr/shared';
-import { scorePronounceability } from './metrics/pronounceability';
-import { scoreBrandability } from './metrics/brandability';
-import { scoreSemanticFit } from './metrics/semanticFit';
-import { scoreTechnicalQuality } from './metrics/technicalQuality';
-import { DEFAULT_WEIGHTS, applyWeights } from './weights';
+import { IScorer } from './IScorer.ts';
+import type { DomainScore } from '@dotcomseekr/shared';
+import { scorePronounceability } from './metrics/pronounceability.ts';
+import { scoreBrandability } from './metrics/brandability.ts';
+import { scoreSemanticFit } from './metrics/semanticFit.ts';
+import { scoreTechnicalQuality } from './metrics/technicalQuality.ts';
+import { DEFAULT_WEIGHTS, applyWeights } from './weights.ts';
 
 /**
  * Aggregates scores from multiple metrics

@@ -1,35 +1,21 @@
 import { readFile } from 'fs/promises';
 import { join } from 'path';
+import { PortableLexicon } from '../generation/lexicon';
+import type { LexiconData, ToneGlue } from '../generation/types';
 
-export interface ToneGlue {
-  prefixes: Record<string, string[]>;
-  suffixes: Record<string, string[]>;
-  modifiers: Record<string, string[]>;
-  alliteration_seeds: Record<string, string[]>;
-  phonetic_clusters: Record<string, string[]>;
-  brandable_patterns: Record<string, string[]>;
-}
+export type { ToneGlue };
 
-export interface Stopwords {
-  [category: string]: string[];
-}
-
-export interface Blocklist {
-  [category: string]: string[];
-}
+export type Stopwords = Record<string, string[]>;
+export type Blocklist = Record<string, string[]>;
 
 /**
- * Loads and caches JSON lexicon files
+ * Node loader for the on-disk JSON lexicons.
+ *
+ * The actual lookups are delegated to `PortableLexicon` so the Node and
+ * Deno/Edge runtimes share a single implementation.
  */
 export class LexiconLoader {
-  private synonyms: Record<string, string[]> = {};
-  private related: Record<string, string[]> = {};
-  private rhymes: Record<string, string[]> = {};
-  private phonetics: Record<string, string[]> = {};
-  private toneGlue: ToneGlue | null = null;
-  private stopwords: Stopwords = {};
-  private blocklist: Blocklist = {};
-  private loaded = false;
+  private portable: PortableLexicon | null = null;
 
   constructor(private lexiconPath: string) {}
 
@@ -37,17 +23,20 @@ export class LexiconLoader {
    * Load all lexicon files
    */
   async load(): Promise<void> {
-    if (this.loaded) return;
+    if (this.portable) return;
 
     try {
-      this.synonyms = await this.loadJSON<Record<string, string[]>>('base_synonyms.json');
-      this.related = await this.loadJSON<Record<string, string[]>>('base_related.json');
-      this.rhymes = await this.loadJSON<Record<string, string[]>>('base_rhymes.json');
-      this.phonetics = await this.loadJSON<Record<string, string[]>>('base_phonetics.json');
-      this.toneGlue = await this.loadJSON<ToneGlue>('tone_glue.json');
-      this.stopwords = await this.loadJSON<Stopwords>('stopwords.json');
-      this.blocklist = await this.loadJSON<Blocklist>('blocklist.json');
-      this.loaded = true;
+      const data: LexiconData = {
+        synonyms: await this.loadJSON<Record<string, string[]>>('base_synonyms.json'),
+        related: await this.loadJSON<Record<string, string[]>>('base_related.json'),
+        rhymes: await this.loadJSON<Record<string, string[]>>('base_rhymes.json'),
+        phonetics: await this.loadJSON<Record<string, string[]>>('base_phonetics.json'),
+        toneGlue: await this.loadJSON<ToneGlue>('tone_glue.json'),
+        stopwords: await this.loadJSON<Stopwords>('stopwords.json'),
+        blocklist: await this.loadJSON<Blocklist>('blocklist.json'),
+      };
+
+      this.portable = new PortableLexicon(data);
     } catch (error) {
       console.error('Error loading lexicon files:', error);
       throw new Error(`Failed to load lexicon files from ${this.lexiconPath}`);
@@ -60,104 +49,51 @@ export class LexiconLoader {
     return JSON.parse(content) as T;
   }
 
-  /**
-   * Get synonyms for a word
-   */
   getSynonyms(word: string): string[] {
-    const normalized = word.toLowerCase();
-    return this.synonyms[normalized] || [];
+    return this.portable?.getSynonyms(word) ?? [];
   }
 
-  /**
-   * Get related terms for a word
-   */
   getRelated(word: string): string[] {
-    const normalized = word.toLowerCase();
-    return this.related[normalized] || [];
+    return this.portable?.getRelated(word) ?? [];
   }
 
-  /**
-   * Get rhymes for a word
-   */
   getRhymes(word: string): string[] {
-    const normalized = word.toLowerCase();
-    return this.rhymes[normalized] || [];
+    return this.portable?.getRhymes(word) ?? [];
   }
 
-  /**
-   * Get phonetic neighbors for a word
-   */
   getPhoneticNeighbors(word: string): string[] {
-    const normalized = word.toLowerCase();
-    return this.phonetics[normalized] || [];
+    return this.portable?.getPhoneticNeighbors(word) ?? [];
   }
 
-  /**
-   * Get all prefixes by category
-   */
   getPrefixes(category?: string): string[] {
-    if (!this.toneGlue) return [];
-    if (category) {
-      return this.toneGlue.prefixes[category] || [];
-    }
-    return Object.values(this.toneGlue.prefixes).flat();
+    return this.portable?.getPrefixes(category) ?? [];
   }
 
-  /**
-   * Get all suffixes by category
-   */
   getSuffixes(category?: string): string[] {
-    if (!this.toneGlue) return [];
-    if (category) {
-      return this.toneGlue.suffixes[category] || [];
-    }
-    return Object.values(this.toneGlue.suffixes).flat();
+    return this.portable?.getSuffixes(category) ?? [];
   }
 
-  /**
-   * Get alliteration seeds for a letter
-   */
   getAlliterationSeeds(letter: string): string[] {
-    if (!this.toneGlue) return [];
-    const normalized = letter.toLowerCase();
-    return this.toneGlue.alliteration_seeds[normalized] || [];
+    return this.portable?.getAlliterationSeeds(letter) ?? [];
   }
 
-  /**
-   * Get phonetic cluster words
-   */
   getPhoneticCluster(cluster: string): string[] {
-    if (!this.toneGlue) return [];
-    return this.toneGlue.phonetic_clusters[cluster] || [];
+    return this.portable?.getPhoneticCluster(cluster) ?? [];
   }
 
-  /**
-   * Check if word is a stopword
-   */
   isStopword(word: string): boolean {
-    const normalized = word.toLowerCase();
-    return Object.values(this.stopwords).some((list) => list.includes(normalized));
+    return this.portable?.isStopword(word) ?? false;
   }
 
-  /**
-   * Check if word is blocked
-   */
   isBlocked(word: string): boolean {
-    const normalized = word.toLowerCase();
-    return Object.values(this.blocklist).some((list) => list.includes(normalized));
+    return this.portable?.isBlocked(word) ?? false;
   }
 
-  /**
-   * Get all stopwords
-   */
   getAllStopwords(): string[] {
-    return Object.values(this.stopwords).flat();
+    return this.portable?.getAllStopwords() ?? [];
   }
 
-  /**
-   * Get all blocked words
-   */
   getAllBlockedWords(): string[] {
-    return Object.values(this.blocklist).flat();
+    return this.portable?.getAllBlockedWords() ?? [];
   }
 }

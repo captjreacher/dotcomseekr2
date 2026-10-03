@@ -1,8 +1,13 @@
 import { HybridExpander, ExplorationMode, ToneModifier } from '../../index';
-import { join } from 'path';
+import { fileURLToPath } from 'url';
+
+// This package is ESM (`type: module`), so `__dirname` is unavailable. Resolve
+// the repo-root `lexicon/` directory from this file's URL instead. From
+// `src/__tests__/integration/` that is five levels up.
+const LEXICON_PATH = fileURLToPath(new URL('../../../../../lexicon', import.meta.url));
 
 describe('HybridExpander Integration', () => {
-  const lexiconPath = join(__dirname, '../../../../../../lexicon');
+  const lexiconPath = LEXICON_PATH;
   let expander: HybridExpander;
 
   beforeAll(async () => {
@@ -94,10 +99,7 @@ describe('HybridExpander with LLM (requires API key)', () => {
     let expander: HybridExpander;
 
     beforeAll(async () => {
-      expander = new HybridExpander(
-        join(__dirname, '../../../../../../lexicon'),
-        apiKey
-      );
+      expander = new HybridExpander(LEXICON_PATH, apiKey);
       await expander.initialize();
     });
 

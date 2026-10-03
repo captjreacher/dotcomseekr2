@@ -1,4 +1,4 @@
-import { ScoringWeights } from '@dotcomseekr/shared';
+import type { ScoringWeights } from '@dotcomseekr/shared';
 
 /**
  * Default scoring weights

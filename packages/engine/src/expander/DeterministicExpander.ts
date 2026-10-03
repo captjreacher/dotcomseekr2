@@ -2,15 +2,7 @@ import { IExpander } from './IExpander';
 import { ExpansionResult } from '../types';
 import { LexiconLoader } from './LexiconLoader';
 import { PhraseSplitter } from './PhraseSplitter';
-
-export enum ExpansionStrategy {
-  SYNONYM = 'SYNONYM',
-  RELATED = 'RELATED',
-  RHYME = 'RHYME',
-  PHONETIC_NEIGHBOR = 'PHONETIC_NEIGHBOR',
-  MORPHOLOGICAL = 'MORPHOLOGICAL',
-  ALLITERATIVE = 'ALLITERATIVE',
-}
+import { ExpansionStrategy } from '../generation/types';
 
 export interface ExpansionOptions {
   maxDepth: number;

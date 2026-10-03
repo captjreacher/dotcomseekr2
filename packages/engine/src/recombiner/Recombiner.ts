@@ -1,6 +1,6 @@
-import { IRecombiner } from './IRecombiner';
-import { LinearRecombination } from './strategies/LinearRecombination';
-import { isValidDomainName, isPronounceab } from './rules';
+import { IRecombiner } from './IRecombiner.ts';
+import { LinearRecombination } from './strategies/LinearRecombination.ts';
+import { isValidDomainName, isPronounceab } from './rules.ts';
 
 export interface RecombinationOptions {
   maxLength: number;

@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "@dotcomseekr/shared": "../_shared/shared-types.ts"
+  }
+}

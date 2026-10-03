@@ -1,4 +1,5 @@
-import { DeterministicExpander, ExpansionStrategy } from './DeterministicExpander';
+import { DeterministicExpander } from './DeterministicExpander';
+import { ExpansionStrategy } from '../generation/types';
 import { LLMEnricher } from '../enricher/LLMEnricher';
 import {
   ExplorationMode,

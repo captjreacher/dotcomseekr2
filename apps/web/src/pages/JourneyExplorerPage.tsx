@@ -13,11 +13,12 @@ const loadingSteps = [
 
 const strategyOrder = [
   'Exact match',
-  'Prefix ideas',
-  'Suffix ideas',
+  'Synonym ideas',
   'Related-word ideas',
-  'Brandable wordplay',
-  'Premium/startup style',
+  'Rhyme ideas',
+  'Phonetic neighbours',
+  'Morphological ideas',
+  'Alliterative ideas',
 ];
 
 function JourneyExplorerPage() {
