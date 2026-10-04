@@ -14,17 +14,23 @@ The engine is organized into modular components:
   - PHONETIC_NEIGHBOR: Similar-sounding words
   - MORPHOLOGICAL: Prefix/suffix transformations
   - ALLITERATIVE: Same-letter words
-- `HybridExpander`: Combines deterministic expansion with LLM enrichment
 - `LexiconLoader`: Loads and caches lexicon files
 - `PhraseSplitter`: Splits phrases into meaningful tokens
 
-### 2. Enricher
-- `LLMEnricher`: Enriches expansion with Claude API
-  - Supports exploration modes: SAFE, EXPLORATORY, ADVENTUROUS
-  - Supports tone modifiers: TECHNICAL, BRANDABLE, PLAYFUL, PROFESSIONAL, MODERN
-  - In-memory caching with token+tone keys
-  - Timeout protection and fail-safe fallback
-- `SemanticAnalyzer`: Analyzes semantic relationships
+### 2. Creative Enrichment (provider-neutral)
+- `ICreativeModel`: the only model surface; a concrete provider implements it.
+  Vendor SDKs never leak past this boundary.
+- `CreativeEnricher`: performs exactly ONE creative request per search:
+  - search-level request (seed, useCase, tone, explorationMode, context)
+  - real cancellation (AbortController is passed into the model and raced
+    against a local deadline)
+  - bounded, TTL'd, search-level cache
+  - never throws; degrades to deterministic output on any failure
+- `FakeCreativeModel`: hermetic test double so automated tests never hit a
+  network model (any future live test opts in via `RUN_LLM_TESTS=1`)
+- `mergeCandidates` / `enrichSearchCandidates`: normalize, dedupe, validate and
+  score creative candidates with the deterministic rules and `DomainScorer`.
+  Creative confidence only nudges the total by a bounded ±5 points.
 
 ### 3. Graph
 - `GraphBuilder`: Constructs semantic graphs
@@ -76,35 +82,30 @@ const result = await expander.expandWithOptions('cloud sync', {
 console.log(`Generated ${result.nodes.length} nodes`);
 ```
 
-### Hybrid Expansion (Deterministic + LLM)
+### Creative Enrichment (one request per search)
 
 ```typescript
 import {
-  HybridExpander,
+  CreativeEnricher,
   ExplorationMode,
-  ToneModifier
+  enrichSearchCandidates,
+  type ICreativeModel,
 } from '@dotcomseekr/engine';
 
-const expander = new HybridExpander(
-  '/path/to/lexicons',
-  process.env.ANTHROPIC_API_KEY
-);
-await expander.initialize();
+// Any provider implements ICreativeModel. Swap in a real adapter later;
+// tests use a fake so the default suite never hits the network.
+const model: ICreativeModel = myCreativeAdapter;
 
-const result = await expander.expand('cloud sync', {
-  maxDepth: 2,
-  maxNodes: 500,
-  enableLLM: true,
-  llmTopN: 10, // Enrich top 10 scored nodes
-  llmMode: ExplorationMode.EXPLORATORY,
-  llmTone: ToneModifier.BRANDABLE,
-  llmMaxTokens: 1000,
-  llmTimeout: 10000,
+const { candidates, creative } = await enrichSearchCandidates({
+  seed: 'cloud sync',
+  useCase: 'developer tooling',
+  tone: 'BRANDABLE',
+  explorationMode: ExplorationMode.EXPLORATORY,
+  model, // exactly one creative request happens here
 });
 
-// Access LLM metadata
-console.log(`LLM enriched ${result.metadata?.llmEnrichedNodes} nodes`);
-console.log('Confidence scores:', result.metadata?.confidenceScores);
+console.log(`Creative degraded? ${creative.degraded}`);
+console.log(`Ranked candidates: ${candidates.length}`);
 ```
 
 ### Recombination and Scoring
@@ -142,7 +143,11 @@ console.log('Top domain:', scored[0].domain, scored[0].scores.total);
 
 ### Environment Variables
 
-- `ANTHROPIC_API_KEY`: Required for LLM enrichment (optional, falls back to deterministic-only)
+- No model environment variables are required. The creative layer is
+  provider-neutral; a concrete adapter (added in a later step) supplies its own
+  credentials. Without a model, searches are deterministic-only.
+- `RUN_LLM_TESTS=1`: opt-in gate for any future live-model integration test.
+  The default automated suite never calls an external model.
 
 ### Exploration Modes
 
@@ -160,18 +165,20 @@ console.log('Top domain:', scored[0].domain, scored[0].scores.total);
 
 ## Performance Guardrails
 
-- **Top-N enrichment**: Only enriches highest-scored nodes to control API costs
-- **Timeout protection**: Configurable timeout per LLM call (default 10s)
-- **Fail-safe fallback**: Returns deterministic results on LLM failures
-- **In-memory caching**: Caches LLM responses by token+tone key
-- **Node/depth limits**: Hard caps on expansion size
+- **One creative request per search**: the model explores the whole naming
+  problem once, instead of one call per token.
+- **Real timeout/cancellation**: an AbortController is passed into the model and
+  raced against a local deadline (default 12s), so a hung model cannot block.
+- **Fail-safe fallback**: any failure, timeout, malformed payload or empty
+  result degrades to the deterministic candidates.
+- **Bounded caching**: TTL'd, size-capped, keyed on seed/context/tone/mode.
+- **Deterministic authority**: creative candidates pass through the same
+  normalization, dedupe, validation and `DomainScorer`; confidence only nudges
+  the total by ±5 points.
 
 ## Testing
 
 ```bash
-# Run unit tests
+# Run unit tests (hermetic; never calls an external model)
 npm test
-
-# Run integration tests (requires ANTHROPIC_API_KEY for LLM tests)
-npm test -- hybrid-expansion.test.ts
 ```

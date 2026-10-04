@@ -1,12 +1,11 @@
 import { FastifyInstance } from 'fastify';
 import { getSupabaseClient } from '../services/supabase';
-import { HybridExpander, ExpansionStrategy } from '@dotcomseekr/engine';
+import { DeterministicExpander, ExpansionStrategy } from '@dotcomseekr/engine';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 
 const lexiconPath = join(process.cwd(), '../../../lexicon');
-const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
-const expander = new HybridExpander(lexiconPath, anthropicApiKey);
+const expander = new DeterministicExpander(lexiconPath);
 
 // Initialize expander
 expander.initialize().catch((err) => {
@@ -23,24 +22,12 @@ export async function expansionRoutes(server: FastifyInstance) {
       strategies = Object.values(ExpansionStrategy),
       enablePrefixes = true,
       enableSuffixes = true,
-      enableLLM = false,
-      llmTopN = 10,
-      llmMode = 'EXPLORATORY',
-      llmTone = 'BRANDABLE',
-      llmMaxTokens = 1000,
-      llmTimeout = 10000,
     } = request.body as {
       maxDepth?: number;
       maxNodes?: number;
       strategies?: ExpansionStrategy[];
       enablePrefixes?: boolean;
       enableSuffixes?: boolean;
-      enableLLM?: boolean;
-      llmTopN?: number;
-      llmMode?: 'SAFE' | 'EXPLORATORY' | 'ADVENTUROUS';
-      llmTone?: 'TECHNICAL' | 'BRANDABLE' | 'PLAYFUL' | 'PROFESSIONAL' | 'MODERN';
-      llmMaxTokens?: number;
-      llmTimeout?: number;
     };
 
     const startTime = Date.now();
@@ -67,27 +54,17 @@ export async function expansionRoutes(server: FastifyInstance) {
           maxDepth,
           maxNodes,
           strategies,
-          enableLLM,
-          llmTopN,
-          llmMode,
-          llmTone,
         },
         success: true,
       });
 
-      // Run expansion with hybrid options
-      const result = await expander.expand(project.initial_phrase, {
+      // Run deterministic expansion
+      const result = await expander.expandWithOptions(project.initial_phrase, {
         maxDepth,
         maxNodes,
-        deterministicStrategies: strategies,
+        strategies,
         enablePrefixes,
         enableSuffixes,
-        enableLLM,
-        llmTopN,
-        llmMode: llmMode as any,
-        llmTone: llmTone as any,
-        llmMaxTokens,
-        llmTimeout,
       });
 
       // Extract confidence scores from metadata
@@ -154,8 +131,6 @@ export async function expansionRoutes(server: FastifyInstance) {
           totalNodes: result.nodes.length,
           totalEdges: result.edges.length,
           deterministicNodes: result.metadata?.totalNodes || 0,
-          llmEnrichedNodes: result.metadata?.llmEnrichedNodes || 0,
-          llmEnabled: result.metadata?.llmEnabled || false,
           strategies,
         },
         success: true,

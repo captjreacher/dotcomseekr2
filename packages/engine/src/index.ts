@@ -7,15 +7,11 @@ export * from './generation';
 // Expander
 export * from './expander/IExpander';
 export * from './expander/DeterministicExpander';
-export * from './expander/HybridExpander';
 export * from './expander/LexiconLoader';
 export * from './expander/PhraseSplitter';
 
-// Enricher
-export * from './enricher/IEnricher';
-export * from './enricher/LLMEnricher';
-export * from './enricher/SemanticAnalyzer';
-export * from './enricher/schemas';
+// Creative enrichment (provider-neutral)
+export * from './creative';
 
 // Graph
 export * from './graph/IGraphBuilder';

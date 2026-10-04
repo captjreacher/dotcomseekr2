@@ -4,12 +4,12 @@ A Domain Intelligence Engine that uses semantic graph traversal and hybrid AI en
 
 ## Architecture
 
-DotcomSeekr is a full-stack monorepo combining deterministic lexicon expansion with LLM-powered semantic enrichment:
+DotcomSeekr is a full-stack monorepo combining deterministic lexicon expansion with provider-neutral creative name enrichment:
 
 - **Frontend**: React + Vite + TypeScript
 - **Backend**: Node + Fastify + TypeScript
 - **Database**: Supabase (Postgres + Auth)
-- **Engine**: Hybrid expansion (Deterministic + Claude AI)
+- **Engine**: Deterministic generation + provider-neutral creative enrichment
 - **Monorepo**: npm workspaces
 
 ## Features
@@ -24,19 +24,20 @@ DotcomSeekr is a full-stack monorepo combining deterministic lexicon expansion w
   - MORPHOLOGICAL: Prefix/suffix transformations
   - ALLITERATIVE: Same-letter words
 
-- **LLM Enrichment (Optional)**
-  - Runs only on top-N scored nodes to control costs
+- **Creative Enrichment (Optional, provider-neutral)**
+  - Exactly ONE creative request per search (not one call per token)
   - 3 exploration modes: SAFE, EXPLORATORY, ADVENTUROUS
   - 5 tone modifiers: TECHNICAL, BRANDABLE, PLAYFUL, PROFESSIONAL, MODERN
-  - In-memory caching with token+tone keys
-  - Timeout protection and fail-safe fallback
+  - Controlled creative kinds (metaphor, portmanteau, compressed, invented, ...)
+  - Bounded, TTL'd search-level cache; real AbortController timeout
+  - Fail-safe: any model failure degrades to deterministic candidates
 
 - **Intelligent Scoring**
   - Pronounceability (25%): Vowel/consonant balance, phonetic patterns
   - Brandability (35%): Memorability, distinctiveness
   - Semantic Fit (25%): Relevance to original phrase
   - Technical Quality (15%): Length, hyphens, numbers
-  - Optional confidence weighting: ±5 points from LLM confidence
+  - Optional bounded confidence nudge: ±5 points (never authoritative)
 
 - **Mock Availability & Purchase**
   - Deterministic availability simulation (~60% available)
@@ -185,7 +186,7 @@ dotcomseekr2/
 │   ├── engine/           # Core intelligence engine
 │   │   ├── src/
 │   │   │   ├── expander/ # Deterministic + Hybrid expansion
-│   │   │   ├── enricher/ # LLM enrichment
+│   │   │   ├── creative/ # Provider-neutral creative enrichment
 │   │   │   ├── scorer/   # Domain scoring
 │   │   │   ├── recombiner/ # Domain generation
 │   │   │   └── registry/ # Availability checking
@@ -322,7 +323,7 @@ npm test -- hybrid-expansion.test.ts
 - **React Router**: Client-side routing
 - **Fastify**: Fast, low-overhead API framework
 - **Supabase**: Postgres + RLS + Auth
-- **Anthropic Claude**: LLM enrichment via SDK
+- **Creative layer**: provider-neutral `ICreativeModel` (adapter added later)
 - **Zod**: Runtime schema validation
 - **Jest**: Unit and integration testing
 
