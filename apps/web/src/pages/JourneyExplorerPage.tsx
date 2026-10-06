@@ -1,11 +1,12 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api, Candidate, Project } from '../services/api';
+import SiteHeader from '../components/SiteHeader';
 
 type MatchTier = 'Premium Pick' | 'Recommended' | 'Strong Match';
 
 const loadingSteps = [
-  'Reading the seed keyword...',
+  'Reading your core words...',
   'Generating smart permutations...',
   'Checking availability...',
   'Curating recommendations...',
@@ -138,21 +139,25 @@ function JourneyExplorerPage() {
 
   return (
     <main className="page-shell recommendations-shell">
-      <nav className="top-nav" aria-label="Primary">
-        <button className="nav-link" type="button" onClick={() => navigate('/')}>
-          DotcomSeekr
-        </button>
-        <button className="nav-link" type="button" onClick={() => navigate('/create')}>
-          New idea
-        </button>
-      </nav>
+      <SiteHeader
+        actions={
+          <>
+            <button className="nav-link" type="button" onClick={() => navigate('/')}>
+              New search
+            </button>
+            <button className="nav-link" type="button" onClick={() => navigate('/create')}>
+              New idea
+            </button>
+          </>
+        }
+      />
 
       <section className="recommendation-hero">
         <div>
           <p className="eyebrow">Curated suggestions</p>
           <h1>{brandIdea.name}</h1>
           <p>
-            Seed keyword: <strong>{brandIdea.initial_phrase || 'your keyword'}</strong>
+            Starting words: <strong>{brandIdea.initial_phrase || 'your keyword'}</strong>
           </p>
         </div>
         <div className="confidence-card">

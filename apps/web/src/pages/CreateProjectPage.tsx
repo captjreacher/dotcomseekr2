@@ -1,9 +1,10 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
+import SiteHeader from '../components/SiteHeader';
 
 const progressSteps = [
-  'Reading the seed keyword...',
+  'Reading your core words...',
   'Generating smart permutations...',
   'Checking availability...',
   'Curating the best matches...',
@@ -47,7 +48,7 @@ function CreateProjectPage() {
     try {
       const project = await api.createProject({
         name: brandName.trim() || trimmedIdea,
-        description: 'Seed keyword created in DotcomSeekr',
+        description: 'Core words created in DotcomSeekr',
         initialPhrase: trimmedIdea,
         settings: { source: 'keyword-discovery', industry, tone, tlds: selectedTlds },
       });
@@ -66,14 +67,18 @@ function CreateProjectPage() {
 
   return (
     <main className="page-shell create-shell">
-      <button className="back-link" type="button" onClick={() => navigate('/')}>
-        Back
-      </button>
+      <SiteHeader
+        actions={
+          <button className="nav-link" type="button" onClick={() => navigate('/')}>
+            Back
+          </button>
+        }
+      />
 
       <section className="create-layout">
         <div className="create-copy">
           <p className="eyebrow">Guided discovery</p>
-          <h1>Start with a seed word. We will explore the naming territory.</h1>
+          <h1>Start with core words. We will explore the naming territory.</h1>
           <p>
             Enter one word or phrase. DotcomSeekr will try exact matches, useful modifiers,
             related concepts, and brandable variants before checking availability.
@@ -81,7 +86,7 @@ function CreateProjectPage() {
         </div>
 
         <form className="discovery-form" onSubmit={handleSubmit}>
-          <label htmlFor="idea">Start with a keyword</label>
+          <label htmlFor="idea">Starting words</label>
           <textarea
             id="idea"
             value={idea}

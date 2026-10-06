@@ -1,5 +1,8 @@
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import SiteHeader from '../components/SiteHeader';
+import ReticleFocus from '../components/ReticleFocus';
+import { BRAND_TAGLINE } from '../brand';
 
 const examples = ['agent', 'automation', 'tradie', 'ledger', 'groovy'];
 const tones = ['clean', 'premium', 'playful', 'technical', 'bold'];
@@ -41,24 +44,69 @@ function LandingPage() {
     });
   };
 
+  const focusAssistedSearch = () => {
+    const workbench = document.getElementById('assisted-search');
+    workbench?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    workbench?.querySelector<HTMLInputElement>('#keyword')?.focus({ preventScroll: true });
+  };
+
   return (
     <main className="page-shell landing-shell">
-      <nav className="top-nav" aria-label="Primary">
-        <span className="brand-mark">DotcomSeekr</span>
-        <button className="nav-link" onClick={() => navigate('/create')}>
-          Start naming
-        </button>
-      </nav>
+      <SiteHeader />
 
       <section className="hero-panel">
-        <p className="eyebrow">Premium domain discovery</p>
-        <h1>Find a name that feels ready to launch.</h1>
-        <p className="hero-copy">
-          Enter one word or phrase. DotcomSeekr expands it into smart, brandable domain ideas.
-        </p>
+        <ReticleFocus className="hero-reticle" watermark state="broad" />
+        <div className="hero-content">
+          <p className="eyebrow">Premium domain discovery</p>
+          <p className="hero-tagline">{BRAND_TAGLINE}</p>
+          <h1>Find the domain that&rsquo;s actually worth registering.</h1>
+          <p className="hero-copy">
+            DotcomSeekr explores, eliminates and refines until strong available domains remain.
+          </p>
+          <div className="hero-actions">
+            <button className="primary-action" type="button" onClick={focusAssistedSearch}>
+              Start assisted search
+            </button>
+            <button className="secondary-action" type="button" onClick={() => navigate('/create')}>
+              Continue with a starting word
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="path-grid" aria-label="Two ways to search">
+        <article className="path-card">
+          <span className="path-badge">Quick Check</span>
+          <h2>Check one exact domain.</h2>
+          <p>
+            Type a specific name and see whether it is available before you commit to it. Landing in a
+            later step.
+          </p>
+          <button className="path-action" type="button" disabled title="Coming soon">
+            Coming soon
+          </button>
+        </article>
+        <article className="path-card">
+          <span className="path-badge">Assisted Search</span>
+          <h2>Explore, eliminate and refine until we find strong available domains.</h2>
+          <p>
+            Give us your core words and we will generate, check and shortlist the options worth your
+            attention.
+          </p>
+          <button className="path-action" type="button" onClick={focusAssistedSearch}>
+            Begin assisted search
+          </button>
+        </article>
+      </section>
+
+      <section className="search-workbench" id="assisted-search" aria-label="Assisted search">
+        <div className="section-heading">
+          <p className="eyebrow">Assisted search</p>
+          <h2>Start with your core words</h2>
+        </div>
 
         <form className="hero-search" onSubmit={startDiscovery}>
-          <label htmlFor="keyword">Start with a keyword</label>
+          <label htmlFor="keyword">Starting words</label>
           <div className="hero-input-row">
             <input
               id="keyword"
@@ -112,31 +160,13 @@ function LandingPage() {
           </div>
         </form>
 
-        <div className="example-row" aria-label="Example keywords">
+        <div className="example-row" aria-label="Example starting words">
           {examples.map((example) => (
             <button key={example} type="button" onClick={() => setKeyword(example)}>
               {example}
             </button>
           ))}
         </div>
-      </section>
-
-      <section className="promise-grid" aria-label="How DotcomSeekr helps">
-        <article>
-          <span>01</span>
-          <h2>Start with a seed word</h2>
-          <p>Enter the keyword you want your naming search to orbit around.</p>
-        </article>
-        <article>
-          <span>02</span>
-          <h2>Generate smart permutations</h2>
-          <p>Explore prefixes, suffixes, related words, compounds, and brandable wordplay.</p>
-        </article>
-        <article>
-          <span>03</span>
-          <h2>Check and shortlist available domains</h2>
-          <p>Compare available options across your preferred TLDs and save the best fits.</p>
-        </article>
       </section>
     </main>
   );

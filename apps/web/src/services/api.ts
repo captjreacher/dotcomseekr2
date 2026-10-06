@@ -156,6 +156,8 @@ function normalizeEdgeResult(result: EdgeDomainResult): Candidate {
   const [domainName, tld = 'com'] = result.domain.split('.');
   const score = scoreDomain(result.domain, result.available);
   const metadata = hideProviderMetadata(result.metadata);
+  // Registrar-neutral label: the provider actually used stays hidden from users.
+  const checkLabel = 'Live availability checked';
 
   return {
     id: result.id,
@@ -172,6 +174,7 @@ function normalizeEdgeResult(result: EdgeDomainResult): Candidate {
       price: result.price,
       currency: result.currency,
       registrationUrl: result.registrationUrl || result.affiliate_url,
+      checkLabel,
       ...metadata,
     },
     created_at: result.created_at,
