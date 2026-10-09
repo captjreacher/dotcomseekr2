@@ -763,3 +763,78 @@ textarea:focus {
     grid-column: auto;
   }
 }
+
+/* Quick Check ---------------------------------------------------------- */
+
+.quick-check-workbench {
+  position: relative;
+  margin-top: 48px;
+}
+
+.quick-check-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.quick-check-panel .section-heading p {
+  margin: 0;
+  max-width: 640px;
+  color: #aeb6c2;
+  line-height: 1.7;
+}
+
+.quick-check-live {
+  display: grid;
+  gap: 12px;
+}
+
+.check-loading {
+  margin: 0;
+  color: #aeb6c2;
+}
+
+.check-result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.052);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.2);
+}
+
+.check-result .check-domain {
+  flex: 1 1 260px;
+  min-width: 0;
+  margin: 0;
+  color: #fffaf0;
+  font-size: clamp(1.5rem, 3vw, 2.4rem);
+  font-weight: 700;
+  line-height: 1.1;
+  word-break: break-word;
+}
+
+.check-result .check-price {
+  margin: 0;
+  color: #dce7f5;
+  font-weight: 700;
+}
+
+.check-result .check-message {
+  flex: 1 1 260px;
+  margin: 0;
+  color: #aeb6c2;
+}
+
+.availability-badge.premium {
+  background: rgba(246, 211, 139, 0.14);
+  color: #f6d38b;
+}
+
+.availability-badge.taken,
+.availability-badge.error {
+  background: rgba(255, 183, 183, 0.13);
+  color: #ffb7b7;
+}
