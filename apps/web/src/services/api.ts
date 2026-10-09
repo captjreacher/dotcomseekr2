@@ -66,6 +66,33 @@ interface EdgeDomainSearchResponse {
   results: EdgeDomainResult[];
 }
 
+/**
+ * Raw payload returned by a single-domain availability check.
+ *
+ * Two backends can produce this shape:
+ * - the Supabase Edge function `dotcomseekr-availability` (status/price/provider/mode)
+ * - the local Fastify `GET /api/v1/availability/:domain` route (available/premium/priceCents)
+ *
+ * It is intentionally loose: interpreting it into the four-state availability
+ * contract happens in `lib/quickCheck.ts`, which treats mock/ambiguous responses
+ * as errors rather than as a real availability answer.
+ */
+export interface AvailabilityCheckPayload {
+  domain?: string;
+  status?: string;
+  available?: boolean;
+  premium?: boolean;
+  price?: number | null;
+  priceCents?: number;
+  currency?: string;
+  registrationUrl?: string | null;
+  provider?: string;
+  mode?: string;
+  checkedAt?: string;
+  fallbackReason?: string;
+  error?: string;
+}
+
 export interface ExpansionOptions {
   query?: string;
   industry?: string;
@@ -281,7 +308,29 @@ export const api = {
     return requestJson(`${API_URL}/api/v1/projects/${projectId}/candidates?minScore=${minScore}`);
   },
 
-  // Availability
+  // Availability (single exact-domain check for the Quick Check flow)
+  async checkDomainAvailability(
+    domain: string,
+    signal?: AbortSignal
+  ): Promise<AvailabilityCheckPayload> {
+    if (USE_EDGE_API) {
+      return requestJson<AvailabilityCheckPayload>(edgeFunctionUrl('dotcomseekr-availability'), {
+        method: 'POST',
+        headers: edgeHeaders(),
+        body: JSON.stringify({ domain }),
+        signal,
+      });
+    }
+
+    const [label, ...rest] = domain.split('.');
+    const tld = rest.join('.') || 'com';
+
+    return requestJson<AvailabilityCheckPayload>(
+      `${API_URL}/api/v1/availability/${encodeURIComponent(label)}?tld=${encodeURIComponent(tld)}`,
+      { signal }
+    );
+  },
+
   async checkAvailability(domain: string, tld = 'com') {
     if (USE_EDGE_API) {
       const score = scoreDomain(`${domain}.${tld}`, true);
