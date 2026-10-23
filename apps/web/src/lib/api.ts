@@ -4,19 +4,16 @@ export const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || '';
 export const USE_EDGE_API = API_MODE === 'edge';
 
 export async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
+  let response: Response;
+
+  try {
+    response = await fetch(url, init);
+  } catch {
+    throw new Error('We could not reach the naming service. Check your connection and try again.');
+  }
 
   if (!response.ok) {
-    let message = 'Request failed';
-
-    try {
-      const body = await response.json();
-      message = body.error || message;
-    } catch {
-      message = response.statusText || message;
-    }
-
-    throw new Error(message);
+    throw new Error('We could not generate suggestions right now. Please try again.');
   }
 
   return response.json();
@@ -24,7 +21,7 @@ export async function requestJson<T>(url: string, init?: RequestInit): Promise<T
 
 export function edgeFunctionUrl(name: string) {
   if (!FUNCTIONS_URL) {
-    throw new Error('VITE_SUPABASE_FUNCTIONS_URL is required when VITE_API_MODE=edge');
+    throw new Error('The naming service is temporarily unavailable. Please try again.');
   }
 
   return `${FUNCTIONS_URL.replace(/\/$/, '')}/${name}`;
