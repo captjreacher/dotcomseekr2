@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 
 import type { Candidate } from '../services/api';
 import {
+  AVAILABILITY_STATUSES,
   DEFAULT_CHECK_LABEL,
   availabilityRank,
   compareByAvailability,
@@ -115,11 +116,48 @@ describe('domain model predicates', () => {
 });
 
 describe('getAvailabilityLabel', () => {
-  it('uses registrar-neutral wording for every state', () => {
-    assert.equal(getAvailabilityLabel('available'), 'Available');
-    assert.equal(getAvailabilityLabel('premium'), 'Premium available');
-    assert.equal(getAvailabilityLabel('unknown'), 'Not checked yet');
-    assert.equal(getAvailabilityLabel('taken'), 'Not available');
+  const canonicalLabels: Record<string, string> = {
+    available: 'Available',
+    premium: 'Premium available',
+    taken: 'Not available',
+    unknown: 'Unable to verify',
+  };
+
+  it('uses one canonical, registrar-neutral label per state', () => {
+    for (const status of AVAILABILITY_STATUSES) {
+      assert.equal(getAvailabilityLabel(status), canonicalLabels[status]);
+    }
+
+    assert.equal(new Set(AVAILABILITY_STATUSES.map((status) => getAvailabilityLabel(status))).size, 4);
+  });
+
+  it('labels a live taken domain as not available and never as worth checking', () => {
+    const taken = candidate('lovecastle.com', 'taken', 72);
+
+    assert.equal(getAvailabilityLabel(taken), 'Not available');
+    assert.doesNotMatch(getAvailabilityLabel(taken), /worth checking/i);
+  });
+
+  it('keeps taken names distinct from available and unchecked names', () => {
+    const labels = [
+      getAvailabilityLabel(candidate('live-one', 'available', 90)),
+      getAvailabilityLabel(candidate('taken-one', 'taken', 90)),
+      getAvailabilityLabel(candidate('fresh-one', undefined, 90)),
+    ];
+
+    assert.deepEqual(labels, ['Available', 'Not available', 'Unable to verify']);
+    assert.notEqual(getAvailabilityLabel('taken'), getAvailabilityLabel('unknown'));
+  });
+
+  it('never returns an availability-sounding claim it cannot back up', () => {
+    const inputs = [...AVAILABILITY_STATUSES, 'taken ', 'TAKEN', 'unverified', '', null, undefined];
+
+    for (const input of inputs) {
+      const label = getAvailabilityLabel(input);
+
+      assert.ok(Object.values(canonicalLabels).includes(label), `unexpected label: ${label}`);
+      assert.doesNotMatch(label, /worth checking/i);
+    }
   });
 
   it('never names a registrar for premium names', () => {

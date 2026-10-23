@@ -113,7 +113,12 @@ export function availabilityRank(input: AvailabilityInput): number {
   }
 }
 
-/** Registrar-neutral human label for an availability state. */
+/**
+ * Registrar-neutral human label for an availability state.
+ *
+ * `unknown` deliberately reads as "Unable to verify" rather than anything
+ * availability-like: an unchecked name must never look available or taken.
+ */
 export function getAvailabilityLabel(input: AvailabilityInput): string {
   switch (resolveAvailabilityStatus(input)) {
     case 'available':
@@ -123,7 +128,7 @@ export function getAvailabilityLabel(input: AvailabilityInput): string {
     case 'taken':
       return 'Not available';
     default:
-      return 'Not checked yet';
+      return 'Unable to verify';
   }
 }
 

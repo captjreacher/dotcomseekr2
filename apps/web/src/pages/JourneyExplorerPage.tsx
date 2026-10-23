@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api, Candidate, Project } from '../services/api';
 import SearchProgress from '../components/SearchProgress';
 import SiteHeader from '../components/SiteHeader';
+import { getAvailabilityLabel } from '../lib/availability';
 import { isRequestAborted, isRequestTimeout } from '../lib/request';
 
 type MatchTier = 'Premium Pick' | 'Recommended' | 'Strong Match';
@@ -311,8 +312,7 @@ function DomainSuggestionCard({
 }) {
   const domain = formatDomain(candidate);
   const tier = getTier(candidate, index);
-  const availability =
-    candidate.availability_status === 'available' ? 'Available' : 'Worth checking';
+  const availability = getAvailabilityLabel(candidate);
   const tags = getTags(candidate, tier);
   const rationale = getRationale(candidate, tier);
   const registrationUrl = getRegistrationUrl(candidate);
