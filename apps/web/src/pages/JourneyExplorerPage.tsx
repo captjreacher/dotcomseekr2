@@ -1,16 +1,11 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api, Candidate, Project } from '../services/api';
+import SearchProgress from '../components/SearchProgress';
 import SiteHeader from '../components/SiteHeader';
+import { isRequestAborted, isRequestTimeout } from '../lib/request';
 
 type MatchTier = 'Premium Pick' | 'Recommended' | 'Strong Match';
-
-const loadingSteps = [
-  'Reading your core words...',
-  'Generating smart permutations...',
-  'Checking availability...',
-  'Curating recommendations...',
-];
 
 const strategyOrder = [
   'Exact match',
@@ -32,21 +27,37 @@ function JourneyExplorerPage() {
   const [error, setError] = useState('');
   const [refineQuery, setRefineQuery] = useState('');
   const [saved, setSaved] = useState<string[]>([]);
-  const [stepIndex, setStepIndex] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  const loadAttemptRef = useRef(0);
+  const refineAttemptRef = useRef(0);
+  const loadControllerRef = useRef<AbortController | null>(null);
+  const refineControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    loadRecommendations();
+    void loadRecommendations();
   }, [id]);
 
   useEffect(() => {
     if (!generating) return;
 
+    const startedAt = Date.now();
+    setElapsedSeconds(0);
     const timer = window.setInterval(() => {
-      setStepIndex((current) => Math.min(current + 1, loadingSteps.length - 1));
-    }, 850);
+      setElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000));
+    }, 1000);
 
     return () => window.clearInterval(timer);
   }, [generating]);
+
+  useEffect(() => {
+    return () => {
+      loadAttemptRef.current += 1;
+      refineAttemptRef.current += 1;
+      loadControllerRef.current?.abort();
+      refineControllerRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -66,39 +77,64 @@ function JourneyExplorerPage() {
   async function loadRecommendations() {
     if (!id) return;
 
+    const attempt = loadAttemptRef.current + 1;
+    loadAttemptRef.current = attempt;
+    loadControllerRef.current?.abort();
+
+    const controller = new AbortController();
+    loadControllerRef.current = controller;
+
     try {
       setLoading(true);
       setError('');
       const [projectData, candidateData] = await Promise.all([
-        api.getProject(id),
-        api.getCandidates(id),
+        api.getProject(id, { signal: controller.signal }),
+        api.getCandidates(id, 0, { signal: controller.signal }),
       ]);
+
+      if (attempt !== loadAttemptRef.current) return;
 
       setBrandIdea(projectData);
       setRefineQuery(projectData.initial_phrase);
       setSuggestions(candidateData);
-    } catch (err: any) {
-      setError(err.message || 'We could not load your suggestions.');
+    } catch (err) {
+      if (attempt !== loadAttemptRef.current || isRequestAborted(err)) return;
+      setError(describeFailure(err, 'We could not load your suggestions.'));
     } finally {
-      setLoading(false);
+      if (attempt === loadAttemptRef.current) setLoading(false);
     }
   }
 
-  async function handleRefine(event: FormEvent) {
-    event.preventDefault();
+  async function refreshSuggestions() {
     if (!id || !refineQuery.trim()) return;
+
+    const attempt = refineAttemptRef.current + 1;
+    refineAttemptRef.current = attempt;
+    refineControllerRef.current?.abort();
+
+    const controller = new AbortController();
+    refineControllerRef.current = controller;
 
     try {
       setGenerating(true);
-      setStepIndex(0);
       setError('');
-      const freshSuggestions = await api.searchDomains(id, refineQuery.trim());
+      const freshSuggestions = await api.searchDomains(id, refineQuery.trim(), {
+        signal: controller.signal,
+      });
+
+      if (attempt !== refineAttemptRef.current) return;
       setSuggestions(freshSuggestions);
-    } catch (err: any) {
-      setError(err.message || 'We could not refresh these suggestions.');
+    } catch (err) {
+      if (attempt !== refineAttemptRef.current || isRequestAborted(err)) return;
+      setError(describeFailure(err, 'We could not refresh these suggestions.'));
     } finally {
-      setGenerating(false);
+      if (attempt === refineAttemptRef.current) setGenerating(false);
     }
+  }
+
+  function handleRefine(event: FormEvent) {
+    event.preventDefault();
+    void refreshSuggestions();
   }
 
   function toggleSaved(candidateId: string) {
@@ -128,10 +164,22 @@ function JourneyExplorerPage() {
     return (
       <main className="page-shell centered-shell">
         <div className="loading-card">
-          <h1>We could not find this brand idea.</h1>
-          <button className="primary-action" type="button" onClick={() => navigate('/')}>
-            Start a new search
-          </button>
+          <h1>
+            {error ? 'We could not load these recommendations.' : 'We could not find this brand idea.'}
+          </h1>
+          {error && <p className="form-error">{error}</p>}
+          <div className="error-actions">
+            <button
+              className="primary-action"
+              type="button"
+              onClick={() => void loadRecommendations()}
+            >
+              Try again
+            </button>
+            <button className="secondary-action" type="button" onClick={() => navigate('/')}>
+              Start a new search
+            </button>
+          </div>
         </div>
       </main>
     );
@@ -179,15 +227,21 @@ function JourneyExplorerPage() {
       </form>
 
       {generating && (
-        <div className="progress-panel wide" aria-live="polite">
-          <div className="progress-bar">
-            <span style={{ width: `${((stepIndex + 1) / loadingSteps.length) * 100}%` }} />
-          </div>
-          <p>{loadingSteps[stepIndex]}</p>
-        </div>
+        <SearchProgress stage="searching" elapsedSeconds={elapsedSeconds} className="wide" />
       )}
 
-      {error && <p className="form-error">{error}</p>}
+      {error && !generating && (
+        <div className="form-error-panel" role="alert">
+          <p className="form-error">{error}</p>
+          <button
+            className="secondary-action compact"
+            type="button"
+            onClick={() => void refreshSuggestions()}
+          >
+            Try again
+          </button>
+        </div>
+      )}
 
       {savedSuggestions.length > 0 && (
         <section className="shortlist-panel">
@@ -371,6 +425,18 @@ function groupByStrategy(candidates: Candidate[]) {
       const bIndex = strategyOrder.includes(b.label) ? strategyOrder.indexOf(b.label) : 999;
       return aIndex - bIndex;
     });
+}
+
+function describeFailure(error: unknown, fallback: string) {
+  if (isRequestTimeout(error)) {
+    return 'Live availability checks took too long, so we stopped waiting. Please try again.';
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  return fallback;
 }
 
 export default JourneyExplorerPage;

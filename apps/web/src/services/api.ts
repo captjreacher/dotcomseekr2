@@ -1,15 +1,25 @@
 import { API_URL, USE_EDGE_API, edgeFunctionUrl, edgeHeaders, requestJson } from '../lib/api';
+import { DOMAIN_SEARCH_TIMEOUT_MS } from '../lib/request';
 
 function edgeProjectsUrl(projectId?: string) {
   const url = edgeFunctionUrl('dotcomseekr-projects');
   return projectId ? `${url}?id=${encodeURIComponent(projectId)}` : url;
 }
 
-function edgeDomainSearch<T>(body: Record<string, unknown>) {
+interface RequestOptions {
+  signal?: AbortSignal;
+}
+
+function edgeDomainSearch<T>(
+  body: Record<string, unknown>,
+  options: RequestOptions & { timeoutMs?: number } = {}
+) {
   return requestJson<T>(edgeFunctionUrl('dotcomseekr-domain-search'), {
     method: 'POST',
     headers: edgeHeaders(),
     body: JSON.stringify(body),
+    signal: options.signal,
+    timeoutMs: options.timeoutMs ?? DOMAIN_SEARCH_TIMEOUT_MS,
   });
 }
 
@@ -183,17 +193,21 @@ function normalizeEdgeResult(result: EdgeDomainResult): Candidate {
 
 export const api = {
   // Projects
-  async createProject(data: {
-    name: string;
-    description?: string;
-    initialPhrase: string;
-    settings?: Record<string, unknown>;
-  }): Promise<Project> {
+  async createProject(
+    data: {
+      name: string;
+      description?: string;
+      initialPhrase: string;
+      settings?: Record<string, unknown>;
+    },
+    options: RequestOptions = {}
+  ): Promise<Project> {
     if (USE_EDGE_API) {
       const project = await requestJson<EdgeProject>(edgeProjectsUrl(), {
         method: 'POST',
         headers: edgeHeaders(),
         body: JSON.stringify(data),
+        signal: options.signal,
       });
       return normalizeEdgeProject(project);
     }
@@ -202,6 +216,7 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
+      signal: options.signal,
     });
   },
 
@@ -214,13 +229,17 @@ export const api = {
     return requestJson<Project[]>(`${API_URL}/api/v1/projects`);
   },
 
-  async getProject(id: string): Promise<Project> {
+  async getProject(id: string, options: RequestOptions = {}): Promise<Project> {
     if (USE_EDGE_API) {
-      const project = await requestJson<EdgeProject>(edgeProjectsUrl(id));
+      const project = await requestJson<EdgeProject>(edgeProjectsUrl(id), {
+        signal: options.signal,
+      });
       return normalizeEdgeProject(project);
     }
 
-    return requestJson<Project>(`${API_URL}/api/v1/projects/${id}`);
+    return requestJson<Project>(`${API_URL}/api/v1/projects/${id}`, {
+      signal: options.signal,
+    });
   },
 
   // Expansion
@@ -270,15 +289,24 @@ export const api = {
   },
 
   // Candidates
-  async getCandidates(projectId: string, minScore = 0): Promise<Candidate[]> {
+  async getCandidates(
+    projectId: string,
+    minScore = 0,
+    options: RequestOptions = {}
+  ): Promise<Candidate[]> {
     if (USE_EDGE_API) {
-      const response = await edgeDomainSearch<EdgeDomainSearchResponse>({ projectId, query: '' });
+      const response = await edgeDomainSearch<EdgeDomainSearchResponse>(
+        { projectId, query: '' },
+        { signal: options.signal, timeoutMs: 30_000 }
+      );
       return response.results
         .map((result) => ({ ...normalizeEdgeResult(result), project_id: projectId }))
         .filter((candidate) => candidate.score_total >= minScore);
     }
 
-    return requestJson(`${API_URL}/api/v1/projects/${projectId}/candidates?minScore=${minScore}`);
+    return requestJson(`${API_URL}/api/v1/projects/${projectId}/candidates?minScore=${minScore}`, {
+      signal: options.signal,
+    });
   },
 
   // Availability
@@ -313,19 +341,29 @@ export const api = {
   async searchDomains(
     projectId: string,
     query: string,
-    options: { industry?: string; tone?: string; tlds?: string[] } = {}
+    options: {
+      industry?: string;
+      tone?: string;
+      tlds?: string[];
+      signal?: AbortSignal;
+    } = {}
   ): Promise<Candidate[]> {
+    const { signal, ...searchOptions } = options;
+
     if (!USE_EDGE_API) {
-      await api.expand(projectId, { query, ...options });
+      await api.expand(projectId, { query, ...searchOptions });
       await api.recombine(projectId, {});
       return api.getCandidates(projectId);
     }
 
-    const response = await edgeDomainSearch<EdgeDomainSearchResponse>({
-      projectId,
-      query,
-      ...options,
-    });
+    const response = await edgeDomainSearch<EdgeDomainSearchResponse>(
+      {
+        projectId,
+        query,
+        ...searchOptions,
+      },
+      { signal }
+    );
     return response.results.map((result) => ({
       ...normalizeEdgeResult(result),
       project_id: projectId,

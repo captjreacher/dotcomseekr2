@@ -1,26 +1,18 @@
+import { requestJson } from './request';
+
+export {
+  DEFAULT_TIMEOUT_MS,
+  DOMAIN_SEARCH_TIMEOUT_MS,
+  RequestError,
+  isRequestAborted,
+  isRequestTimeout,
+  requestJson,
+} from './request';
+
 export const API_MODE = import.meta.env.VITE_API_MODE || 'fastify';
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 export const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || '';
 export const USE_EDGE_API = API_MODE === 'edge';
-
-export async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
-
-  if (!response.ok) {
-    let message = 'Request failed';
-
-    try {
-      const body = await response.json();
-      message = body.error || message;
-    } catch {
-      message = response.statusText || message;
-    }
-
-    throw new Error(message);
-  }
-
-  return response.json();
-}
 
 export function edgeFunctionUrl(name: string) {
   if (!FUNCTIONS_URL) {

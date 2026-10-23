@@ -517,10 +517,55 @@ textarea:focus {
   transition: width 0.35s ease;
 }
 
+.progress-bar.indeterminate span {
+  width: 35%;
+  animation: progress-slide 1.4s ease-in-out infinite;
+}
+
+@keyframes progress-slide {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(320%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar.indeterminate span {
+    width: 100%;
+    animation: none;
+  }
+}
+
+.progress-detail {
+  margin: 0;
+  color: #9fa8b4;
+  font-size: 0.9rem;
+}
+
 .form-error {
   margin: 0;
   color: #ffb7b7;
   line-height: 1.5;
+}
+
+.form-error-panel {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 183, 183, 0.28);
+  border-radius: 8px;
+  background: rgba(255, 120, 120, 0.08);
+}
+
+.error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
 }
 
 .recommendation-hero {
