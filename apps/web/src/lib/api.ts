@@ -16,7 +16,7 @@ export const USE_EDGE_API = API_MODE === 'edge';
 
 export function edgeFunctionUrl(name: string) {
   if (!FUNCTIONS_URL) {
-    throw new Error('VITE_SUPABASE_FUNCTIONS_URL is required when VITE_API_MODE=edge');
+    throw new Error('The naming service is temporarily unavailable. Please try again.');
   }
 
   return `${FUNCTIONS_URL.replace(/\/$/, '')}/${name}`;
