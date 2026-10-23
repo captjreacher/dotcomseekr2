@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api, Candidate, Project } from '../services/api';
 import SearchProgress from '../components/SearchProgress';
 import SiteHeader from '../components/SiteHeader';
-import { getAvailabilityLabel } from '../lib/availability';
+import { getAvailabilityLabel, getAvailabilityStatus } from '../lib/availability';
 import { isRequestAborted, isRequestTimeout } from '../lib/request';
 
 type MatchTier = 'Premium Pick' | 'Recommended' | 'Strong Match';
@@ -312,6 +312,7 @@ function DomainSuggestionCard({
 }) {
   const domain = formatDomain(candidate);
   const tier = getTier(candidate, index);
+  const availabilityStatus = getAvailabilityStatus(candidate);
   const availability = getAvailabilityLabel(candidate);
   const tags = getTags(candidate, tier);
   const rationale = getRationale(candidate, tier);
@@ -321,7 +322,7 @@ function DomainSuggestionCard({
     <article className={`domain-card ${index === 0 ? 'featured' : ''}`}>
       <div className="card-topline">
         <span className={`tier-badge ${tier === 'Premium Pick' ? 'premium' : ''}`}>{tier}</span>
-        <span className="availability-badge">{availability}</span>
+        <span className={`availability-badge ${availabilityStatus}`}>{availability}</span>
       </div>
 
       <h3>{domain}</h3>

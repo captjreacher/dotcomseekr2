@@ -718,6 +718,21 @@ textarea:focus {
   color: #8ff0c3;
 }
 
+.availability-badge.premium {
+  background: rgba(246, 211, 139, 0.14);
+  color: #f6d38b;
+}
+
+.availability-badge.taken {
+  background: rgba(255, 120, 120, 0.1);
+  color: #ffb7b7;
+}
+
+.availability-badge.unknown {
+  background: rgba(255, 255, 255, 0.08);
+  color: #c7ced8;
+}
+
 .domain-card h3 {
   margin: 22px 0 12px;
   color: #fffaf0;
