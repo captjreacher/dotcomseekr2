@@ -5,6 +5,7 @@ import type { Candidate } from '../services/api';
 import {
   AVAILABILITY_STATUSES,
   DEFAULT_CHECK_LABEL,
+  UNVERIFIED_CHECK_LABEL,
   availabilityRank,
   compareByAvailability,
   getAvailabilityLabel,
@@ -14,6 +15,7 @@ import {
   isPurchasable,
   isUnavailable,
   isUnchecked,
+  isVerifiedAvailabilitySource,
   normalizeAvailabilityStatus,
   sortByAvailability,
 } from './availability.ts';
@@ -291,5 +293,44 @@ describe('sortByAvailability', () => {
     assert.ok(compareByAvailability(a, b) < 0);
     assert.ok(compareByAvailability(b, a) > 0);
     assert.equal(compareByAvailability(a, c), 0);
+  });
+});
+
+describe('availability source verification', () => {
+  it('trusts an answer that names a live registrar', () => {
+    assert.equal(isVerifiedAvailabilitySource({ provider: 'dynadot', mode: 'live' }), true);
+    assert.equal(isVerifiedAvailabilitySource({ provider: 'namecheap', mode: 'sandbox' }), true);
+  });
+
+  it('never trusts a mock answer', () => {
+    assert.equal(isVerifiedAvailabilitySource({ provider: 'mock', mode: 'mock' }), false);
+    assert.equal(isVerifiedAvailabilitySource({ provider: 'mock' }), false);
+    assert.equal(isVerifiedAvailabilitySource({ provider: 'dynadot', mode: 'mock' }), false);
+  });
+
+  it('treats a missing or blank source as unverified', () => {
+    assert.equal(isVerifiedAvailabilitySource(undefined), false);
+    assert.equal(isVerifiedAvailabilitySource(null), false);
+    assert.equal(isVerifiedAvailabilitySource({}), false);
+    assert.equal(isVerifiedAvailabilitySource({ provider: '   ', mode: 'live' }), false);
+  });
+
+  it('normalises casing and whitespace', () => {
+    assert.equal(isVerifiedAvailabilitySource({ provider: ' MOCK ', mode: ' LIVE ' }), false);
+    assert.equal(isVerifiedAvailabilitySource({ provider: ' Dynadot ', mode: ' Live ' }), true);
+  });
+
+  it('reads an unverified row as unable to verify rather than available or taken', () => {
+    const status = normalizeAvailabilityStatus(undefined);
+
+    assert.equal(status, 'unknown');
+    assert.equal(getAvailabilityLabel(status), 'Unable to verify');
+    assert.equal(isPurchasable(status), false);
+    assert.equal(isUnavailable(status), false);
+  });
+
+  it('keeps the unverified check label distinct from a completed check', () => {
+    assert.notEqual(UNVERIFIED_CHECK_LABEL, DEFAULT_CHECK_LABEL);
+    assert.match(UNVERIFIED_CHECK_LABEL, /not verified/i);
   });
 });

@@ -13,6 +13,18 @@ const allowedOrigins = new Set([
 const defaultTlds = ['com', 'ai', 'io', 'co'];
 const allowedTlds = new Set(['com', 'ai', 'io', 'co', 'net', 'org']);
 const maxDomainsPerSearch = 36;
+// Dynadot's standard tier accepts a single domain per command and allows one
+// in-flight request per account, so a search is checked domain by domain. Each
+// command is bounded individually and the loop stops before it can outlive the
+// client's 75s deadline.
+const dynadotRequestTimeoutMs = 12_000;
+const dynadotSearchBudgetMs = 60_000;
+// Dynadot documents 60 requests/minute for standard accounts. Pacing from the
+// start of one request to the start of the next keeps a whole search inside
+// that budget (~57/minute) even when the registrar answers quickly.
+const dynadotRequestIntervalMs = 1_050;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 type ProviderMode = 'sandbox' | 'live' | 'mock';
 type ProviderName = 'mock' | 'namecheap' | 'dynadot';
@@ -27,6 +39,8 @@ type AvailabilityResult = {
   checkedAt: string;
   registrationUrl: string;
   fallbackReason?: string;
+  /** True only when a live registrar actually answered for this domain. */
+  verified?: boolean;
   metadata: Record<string, unknown>;
 };
 
@@ -230,11 +244,15 @@ function normalizeDynadotFallbackReason(message: string, status?: number) {
   if (status === 401 || status === 403 || normalized.includes('api key')) {
     return 'Dynadot invalid API key or API access denied';
   }
+  if (normalized.includes('too many domains')) {
+    return 'Dynadot account is limited to one domain per command';
+  }
   if (status === 429 || normalized.includes('rate') || normalized.includes('too many')) {
     return 'Dynadot rate limit reached';
   }
   if (status && status >= 500) return `Dynadot endpoint unavailable: HTTP ${status}`;
   if (message.includes('No Dynadot search results')) return 'Dynadot returned malformed JSON';
+  if (/timed?\s*out|timeout|abort/i.test(message)) return 'Dynadot request timed out';
   return message;
 }
 
@@ -245,12 +263,18 @@ async function checkFallbackProvider(
 ) {
   const results = await fallbackProvider.checkDomains(domains);
 
+  // The fallback provider's own reason describes why *it* was chosen, which
+  // hides the actual registrar failure that caused this fallback. Report the
+  // real reason and mark the result unverified, because a fallback result must
+  // never be presented to users as a checked availability answer.
   return results.map((result) => ({
     ...result,
-    fallbackReason: result.fallbackReason ?? fallbackReason,
+    fallbackReason,
+    verified: false,
     metadata: {
       ...result.metadata,
-      fallbackReason: result.fallbackReason ?? fallbackReason,
+      fallbackReason,
+      verified: false,
     },
   }));
 }
@@ -269,11 +293,7 @@ function parseDynadotPrice(rawPrice?: string) {
 }
 
 function dynadotResponseMessage(searchResponse: DynadotSearchResponse['SearchResponse']) {
-  const candidates = [
-    searchResponse?.Error,
-    searchResponse?.ErrorMessage,
-    searchResponse?.Message,
-  ];
+  const candidates = [searchResponse?.Error, searchResponse?.ErrorMessage, searchResponse?.Message];
 
   for (const candidate of candidates) {
     if (typeof candidate === 'string' && candidate.trim()) return candidate.trim();
@@ -311,6 +331,111 @@ function buildDynadotSearchUrl(endpoint: string, apiKey: string, domains: string
   return `${endpoint}?${params.toString()}`;
 }
 
+/**
+ * One availability check for a single domain.
+ *
+ * Dynadot's standard tier rejects a command carrying more than one domain
+ * ("too many domains entered, please search one domain per command"), so every
+ * check is issued as its own command.
+ */
+async function checkDynadotDomain(
+  endpoint: string,
+  apiKey: string,
+  domain: string,
+  mode: ProviderMode,
+  timeoutMs: number
+): Promise<{ ok: true; result: AvailabilityResult } | { ok: false; reason: string }> {
+  try {
+    const response = await fetch(buildDynadotSearchUrl(endpoint, apiKey, [domain]), {
+      method: 'GET',
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+
+    if (!response.ok) {
+      const reason = normalizeDynadotFallbackReason(
+        `Dynadot HTTP ${response.status}`,
+        response.status
+      );
+      logDynadotFallback(reason, { mode, domain, status: response.status });
+      return { ok: false, reason };
+    }
+
+    let payload: DynadotSearchResponse;
+    try {
+      payload = (await response.json()) as DynadotSearchResponse;
+    } catch {
+      const reason = 'Dynadot returned invalid JSON';
+      logDynadotFallback(reason, { mode, domain });
+      return { ok: false, reason };
+    }
+
+    const searchResponse = payload.SearchResponse;
+    const responseCode =
+      searchResponse?.ResponseCode !== undefined && searchResponse.ResponseCode !== null
+        ? String(searchResponse.ResponseCode)
+        : undefined;
+    const responseMessage = dynadotResponseMessage(searchResponse);
+
+    if (responseCode !== '0') {
+      const reason = normalizeDynadotFallbackReason(
+        responseMessage || `Dynadot returned ResponseCode ${responseCode ?? 'missing'}`,
+        response.status
+      );
+      logDynadotFallback(reason, {
+        mode,
+        domain,
+        responseCode: responseCode ?? null,
+        responseMessage: responseMessage ?? null,
+      });
+      return { ok: false, reason };
+    }
+
+    const searchResults = dynadotSearchResults(searchResponse?.SearchResults);
+    const result = searchResults?.find(
+      (item) =>
+        typeof item.DomainName === 'string' &&
+        String(item.DomainName).toLowerCase() === domain.toLowerCase()
+    );
+
+    if (!result || typeof result.Available !== 'string') {
+      const reason = 'Dynadot response omitted domain result';
+      logDynadotFallback(reason, { mode, domain });
+      return { ok: false, reason };
+    }
+
+    const domainName = String(result.DomainName);
+    const availableRaw = result.Available.toLowerCase();
+    const priceRaw = typeof result.Price === 'string' ? result.Price : undefined;
+    const price = parseDynadotPrice(priceRaw);
+
+    return {
+      ok: true,
+      result: {
+        domain: domainName,
+        available: availableRaw === 'yes',
+        price: availableRaw === 'yes' ? price.price : null,
+        currency: price.currency,
+        provider: 'dynadot',
+        mode,
+        checkedAt: new Date().toISOString(),
+        registrationUrl: buildDynadotRegistrationUrl(domainName),
+        verified: true,
+        metadata: {
+          premium: price.premium,
+          responseCode,
+          priceText: priceRaw,
+          verified: true,
+        },
+      },
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Dynadot request failed';
+    const reason = normalizeDynadotFallbackReason(message);
+    logDynadotFallback(reason, { mode, domain });
+    return { ok: false, reason };
+  }
+}
+
 function createDynadotProvider(fallbackProvider: RegistrarProvider): RegistrarProvider {
   const { config, hasApiKey, configError } = readDynadotConfig();
 
@@ -318,159 +443,73 @@ function createDynadotProvider(fallbackProvider: RegistrarProvider): RegistrarPr
     return fallbackProvider;
   }
 
+  const mode: ProviderMode = config.sandbox ? 'sandbox' : 'live';
+  const endpoint = config.sandbox
+    ? 'https://api-sandbox.dynadot.com/api3.json'
+    : 'https://api.dynadot.com/api3.json';
+
   return {
     provider: 'dynadot',
-    mode: config.sandbox ? 'sandbox' : 'live',
+    mode,
     async checkDomains(domains) {
-      const endpoint = config.sandbox
-        ? 'https://api-sandbox.dynadot.com/api3.json'
-        : 'https://api.dynadot.com/api3.json';
+      if (configError) {
+        logDynadotFallback(configError, { mode });
+        return checkFallbackProvider(fallbackProvider, domains, configError);
+      }
 
-      try {
-        if (configError) {
-          logDynadotFallback(configError, { mode: config.sandbox ? 'sandbox' : 'live' });
-          return checkFallbackProvider(fallbackProvider, domains, configError);
+      const checked: AvailabilityResult[] = [];
+      const startedAt = Date.now();
+      let stopReason: string | undefined;
+
+      // One request at a time, in search order: Dynadot allows a single
+      // in-flight request per account, and concurrent calls can get the account
+      // temporarily banned. The loop stops at the first failure so a rejected
+      // or throttled command cannot burn the remaining budget.
+      for (const domain of domains) {
+        if (Date.now() - startedAt > dynadotSearchBudgetMs) {
+          stopReason = 'Dynadot search budget exhausted';
+          break;
         }
 
-        const checkedAt = new Date().toISOString();
-        const response = await fetch(buildDynadotSearchUrl(endpoint, config.apiKey!, domains), {
-          method: 'GET',
-        });
-
-        if (!response.ok) {
-          const fallbackReason = normalizeDynadotFallbackReason(
-            `Dynadot HTTP ${response.status}`,
-            response.status
-          );
-          logDynadotFallback(fallbackReason, {
-            status: response.status,
-            mode: config.sandbox ? 'sandbox' : 'live',
-            requestedCount: domains.length,
-          });
-          return checkFallbackProvider(fallbackProvider, domains, fallbackReason);
-        }
-
-        let payload: DynadotSearchResponse;
-        try {
-          payload = (await response.json()) as DynadotSearchResponse;
-        } catch {
-          const fallbackReason = 'Dynadot returned invalid JSON';
-          logDynadotFallback(fallbackReason, {
-            status: response.status,
-            mode: config.sandbox ? 'sandbox' : 'live',
-            requestedCount: domains.length,
-          });
-          return checkFallbackProvider(fallbackProvider, domains, fallbackReason);
-        }
-
-        const searchResponse = payload.SearchResponse;
-        const responseCode =
-          searchResponse?.ResponseCode !== undefined && searchResponse.ResponseCode !== null
-            ? String(searchResponse.ResponseCode)
-            : undefined;
-        const responseMessage = dynadotResponseMessage(searchResponse);
-
-        if (responseCode !== '0') {
-          const fallbackReason = normalizeDynadotFallbackReason(
-            responseMessage || `Dynadot returned ResponseCode ${responseCode ?? 'missing'}`,
-            response.status
-          );
-          logDynadotFallback(fallbackReason, {
-            status: response.status,
-            responseCode: responseCode ?? null,
-            responseMessage: responseMessage ?? null,
-            mode: config.sandbox ? 'sandbox' : 'live',
-            requestedCount: domains.length,
-          });
-          return checkFallbackProvider(fallbackProvider, domains, fallbackReason);
-        }
-
-        const searchResults = dynadotSearchResults(searchResponse?.SearchResults);
-        if (!searchResults) {
-          const fallbackReason = 'Dynadot returned malformed JSON';
-          logDynadotFallback(fallbackReason, {
-            status: response.status,
-            responseCode,
-            mode: config.sandbox ? 'sandbox' : 'live',
-            requestedCount: domains.length,
-          });
-          return checkFallbackProvider(fallbackProvider, domains, fallbackReason);
-        }
-
-        const byDomain = new Map(
-          searchResults
-            .filter((result) => typeof result.DomainName === 'string')
-            .map((result) => [String(result.DomainName).toLowerCase(), result])
+        const requestStartedAt = Date.now();
+        const outcome = await checkDynadotDomain(
+          endpoint,
+          config.apiKey!,
+          domain,
+          mode,
+          dynadotRequestTimeoutMs
         );
 
-        const missingDomains = domains.filter((domain) => !byDomain.has(domain.toLowerCase()));
-        if (missingDomains.length > 0) {
-          const fallbackReason = 'Dynadot response omitted domain result';
-          logDynadotFallback(fallbackReason, {
-            status: response.status,
-            responseCode,
-            mode: config.sandbox ? 'sandbox' : 'live',
-            requestedCount: domains.length,
-            resultCount: searchResults.length,
-            missingCount: missingDomains.length,
-          });
-          return checkFallbackProvider(fallbackProvider, domains, fallbackReason);
+        if (!outcome.ok) {
+          stopReason = outcome.reason;
+          break;
         }
 
-        const malformedCount = domains.filter((domain) => {
-          const result = byDomain.get(domain.toLowerCase());
-          return typeof result?.Available !== 'string';
-        }).length;
+        checked.push(outcome.result);
 
-        if (malformedCount > 0) {
-          const fallbackReason = 'Dynadot returned malformed domain result';
-          logDynadotFallback(fallbackReason, {
-            status: response.status,
-            responseCode,
-            mode: config.sandbox ? 'sandbox' : 'live',
-            requestedCount: domains.length,
-            resultCount: searchResults.length,
-            malformedCount,
-          });
-          return checkFallbackProvider(fallbackProvider, domains, fallbackReason);
+        if (checked.length < domains.length) {
+          const elapsed = Date.now() - requestStartedAt;
+          if (elapsed < dynadotRequestIntervalMs) {
+            await sleep(dynadotRequestIntervalMs - elapsed);
+          }
         }
-
-        return domains.map((domain) => {
-          const result = byDomain.get(domain.toLowerCase())!;
-          const domainName = String(result.DomainName);
-          const availableRaw = String(result.Available ?? '').toLowerCase();
-          const priceRaw = typeof result.Price === 'string' ? result.Price : undefined;
-          const price = parseDynadotPrice(priceRaw);
-
-          return {
-            domain: domainName,
-            available: availableRaw === 'yes',
-            price: availableRaw === 'yes' ? price.price : null,
-            currency: price.currency,
-            provider: 'dynadot',
-            mode: config.sandbox ? 'sandbox' : 'live',
-            checkedAt,
-            registrationUrl: buildDynadotRegistrationUrl(domainName),
-            metadata: {
-              premium: price.premium,
-              responseCode,
-              priceText: priceRaw,
-            },
-          };
-        });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Dynadot request failed';
-        const fallbackReason = normalizeDynadotFallbackReason(message);
-        logDynadotFallback(fallbackReason, {
-          mode: config.sandbox ? 'sandbox' : 'live',
-          requestedCount: domains.length,
-        });
-        return checkFallbackProvider(fallbackProvider, domains, fallbackReason);
       }
+
+      if (checked.length === domains.length) return checked;
+
+      // Only the domains that were actually answered stay verified; the rest
+      // are reported as unverified with the reason the checks stopped.
+      const remaining = domains.slice(checked.length);
+      const fallback = await checkFallbackProvider(
+        fallbackProvider,
+        remaining,
+        stopReason ?? 'Dynadot did not answer'
+      );
+
+      return [...checked, ...fallback];
     },
   };
 }
-
 function createNamecheapProvider(): RegistrarProvider {
   const { config, missing } = readNamecheapConfig();
 
@@ -537,6 +576,7 @@ function createNamecheapProvider(): RegistrarProvider {
               description: attrs.Description,
               icannFee: attrs.IcannFee,
               eapFee: attrs.EapFee,
+              verified: true,
             },
           };
         });
@@ -661,12 +701,16 @@ Deno.serve(async (req) => {
     const domains = domainsToCheck(candidates, tlds);
     const metadataByDomain = domainMetadataByName(candidates, tlds);
     const availabilityResults = await provider.checkDomains(domains);
-    const firstProvider = availabilityResults[0]?.provider ?? 'mock';
-    const providerName = availabilityResults.every((result) => result.provider === firstProvider)
+    // Report the provider that actually answered: a search where later checks
+    // fell back is still a live search for the domains that were answered.
+    const verifiedResults = availabilityResults.filter((result) => result.verified);
+    const answeringResults = verifiedResults.length > 0 ? verifiedResults : availabilityResults;
+    const firstProvider = answeringResults[0]?.provider ?? 'mock';
+    const providerName = answeringResults.every((result) => result.provider === firstProvider)
       ? firstProvider
       : 'mock';
-    const firstMode = availabilityResults[0]?.mode ?? 'mock';
-    const providerMode = availabilityResults.every((result) => result.mode === firstMode)
+    const firstMode = answeringResults[0]?.mode ?? 'mock';
+    const providerMode = answeringResults.every((result) => result.mode === firstMode)
       ? firstMode
       : 'mock';
     const providerMetadata = {
