@@ -24,6 +24,34 @@ export const AVAILABILITY_STATUSES: readonly AvailabilityStatus[] = [
 /** Registrar-neutral fallback label for a completed availability check. */
 export const DEFAULT_CHECK_LABEL = 'Live availability checked';
 
+/** Check label for a candidate no registrar actually answered for. */
+export const UNVERIFIED_CHECK_LABEL = 'Availability not verified';
+
+/** Anything that records which source produced an availability answer. */
+export interface AvailabilitySource {
+  provider?: string | null;
+  mode?: string | null;
+}
+
+/**
+ * Whether an availability answer came from a live registrar.
+ *
+ * Only an explicit mock answer counts as unverified. Rows written before the
+ * backend recorded a `verified` flag still name their real registrar, so they
+ * stay trusted; anything marked `mock` (provider or mode) carries no checked
+ * answer at all and must never be read as available or taken.
+ */
+export function isVerifiedAvailabilitySource(
+  source: AvailabilitySource | null | undefined
+): boolean {
+  const provider = source?.provider?.trim().toLowerCase() ?? '';
+  const mode = source?.mode?.trim().toLowerCase() ?? '';
+
+  if (!provider || provider === 'mock') return false;
+
+  return mode !== 'mock';
+}
+
 /** Anything carrying a backend availability state. */
 export interface AvailabilitySubject {
   availability_status?: string | null;

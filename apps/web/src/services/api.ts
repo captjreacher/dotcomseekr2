@@ -1,4 +1,9 @@
 import { API_URL, USE_EDGE_API, edgeFunctionUrl, edgeHeaders, requestJson } from '../lib/api';
+import {
+  DEFAULT_CHECK_LABEL,
+  UNVERIFIED_CHECK_LABEL,
+  isVerifiedAvailabilitySource,
+} from '../lib/availability';
 import { DOMAIN_SEARCH_TIMEOUT_MS } from '../lib/request';
 
 function edgeProjectsUrl(projectId?: string) {
@@ -166,8 +171,15 @@ function normalizeEdgeResult(result: EdgeDomainResult): Candidate {
   const [domainName, tld = 'com'] = result.domain.split('.');
   const score = scoreDomain(result.domain, result.available);
   const metadata = hideProviderMetadata(result.metadata);
+  // A fallback answer is not a checked answer: if no live registrar replied,
+  // the row carries no usable availability and must read as unverified rather
+  // than inheriting the placeholder `available` boolean.
+  const verified = isVerifiedAvailabilitySource({
+    provider: typeof result.provider === 'string' ? result.provider : undefined,
+    mode: typeof result.metadata?.mode === 'string' ? result.metadata.mode : undefined,
+  });
   // Registrar-neutral label: the provider actually used stays hidden from users.
-  const checkLabel = 'Live availability checked';
+  const checkLabel = verified ? DEFAULT_CHECK_LABEL : UNVERIFIED_CHECK_LABEL;
 
   return {
     id: result.id,
@@ -179,7 +191,7 @@ function normalizeEdgeResult(result: EdgeDomainResult): Candidate {
     score_brandability: score,
     score_semantic_fit: score,
     score_technical_quality: score,
-    availability_status: result.available ? 'available' : 'taken',
+    availability_status: verified ? (result.available ? 'available' : 'taken') : 'unknown',
     availability_data: {
       price: result.price,
       currency: result.currency,

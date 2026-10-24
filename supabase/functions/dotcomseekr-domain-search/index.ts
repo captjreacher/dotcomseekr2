@@ -13,6 +13,12 @@ const allowedOrigins = new Set([
 const defaultTlds = ['com', 'ai', 'io', 'co'];
 const allowedTlds = new Set(['com', 'ai', 'io', 'co', 'net', 'org']);
 const maxDomainsPerSearch = 36;
+// Dynadot documents one in-flight request per account and warns that concurrent
+// requests can get the account temporarily banned, so the whole search is
+// checked in a single request. A live search costs roughly 1.4s per domain
+// (36 domains measured ~53s), so that request is bounded below the client's
+// 75s deadline rather than left unbounded.
+const dynadotRequestTimeoutMs = 68_000;
 
 type ProviderMode = 'sandbox' | 'live' | 'mock';
 type ProviderName = 'mock' | 'namecheap' | 'dynadot';
@@ -27,6 +33,8 @@ type AvailabilityResult = {
   checkedAt: string;
   registrationUrl: string;
   fallbackReason?: string;
+  /** True only when a live registrar actually answered for this domain. */
+  verified?: boolean;
   metadata: Record<string, unknown>;
 };
 
@@ -235,6 +243,7 @@ function normalizeDynadotFallbackReason(message: string, status?: number) {
   }
   if (status && status >= 500) return `Dynadot endpoint unavailable: HTTP ${status}`;
   if (message.includes('No Dynadot search results')) return 'Dynadot returned malformed JSON';
+  if (/timed?\s*out|timeout|abort/i.test(message)) return 'Dynadot request timed out';
   return message;
 }
 
@@ -245,12 +254,18 @@ async function checkFallbackProvider(
 ) {
   const results = await fallbackProvider.checkDomains(domains);
 
+  // The fallback provider's own reason describes why *it* was chosen, which
+  // hides the actual registrar failure that caused this fallback. Report the
+  // real reason and mark the result unverified, because a fallback result must
+  // never be presented to users as a checked availability answer.
   return results.map((result) => ({
     ...result,
-    fallbackReason: result.fallbackReason ?? fallbackReason,
+    fallbackReason,
+    verified: false,
     metadata: {
       ...result.metadata,
-      fallbackReason: result.fallbackReason ?? fallbackReason,
+      fallbackReason,
+      verified: false,
     },
   }));
 }
@@ -335,6 +350,7 @@ function createDynadotProvider(fallbackProvider: RegistrarProvider): RegistrarPr
         const checkedAt = new Date().toISOString();
         const response = await fetch(buildDynadotSearchUrl(endpoint, config.apiKey!, domains), {
           method: 'GET',
+          signal: AbortSignal.timeout(dynadotRequestTimeoutMs),
         });
 
         if (!response.ok) {
@@ -455,6 +471,7 @@ function createDynadotProvider(fallbackProvider: RegistrarProvider): RegistrarPr
               premium: price.premium,
               responseCode,
               priceText: priceRaw,
+              verified: true,
             },
           };
         });
@@ -537,6 +554,7 @@ function createNamecheapProvider(): RegistrarProvider {
               description: attrs.Description,
               icannFee: attrs.IcannFee,
               eapFee: attrs.EapFee,
+              verified: true,
             },
           };
         });
