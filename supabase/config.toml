@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.dotcomseekr-domain-search]
 verify_jwt = false
+
+[functions.dotcomseekr-availability]
+verify_jwt = false

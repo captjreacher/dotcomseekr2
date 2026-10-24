@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SiteHeader from '../components/SiteHeader';
 import ReticleFocus from '../components/ReticleFocus';
+import QuickCheckPanel from '../components/QuickCheckPanel';
 import { BRAND_TAGLINE } from '../brand';
 
 const examples = ['agent', 'automation', 'tradie', 'ledger', 'groovy'];
@@ -50,6 +51,12 @@ function LandingPage() {
     workbench?.querySelector<HTMLInputElement>('#keyword')?.focus({ preventScroll: true });
   };
 
+  const focusQuickCheck = () => {
+    const workbench = document.getElementById('quick-check');
+    workbench?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    workbench?.querySelector<HTMLInputElement>('#quick-check-domain')?.focus({ preventScroll: true });
+  };
+
   return (
     <main className="page-shell landing-shell">
       <SiteHeader />
@@ -78,12 +85,9 @@ function LandingPage() {
         <article className="path-card">
           <span className="path-badge">Quick Check</span>
           <h2>Check one exact domain.</h2>
-          <p>
-            Type a specific name and see whether it is available before you commit to it. Landing in a
-            later step.
-          </p>
-          <button className="path-action" type="button" disabled title="Coming soon">
-            Coming soon
+          <p>Type a specific name and see whether it is available before you commit to it.</p>
+          <button className="path-action" type="button" onClick={focusQuickCheck}>
+            Check a domain
           </button>
         </article>
         <article className="path-card">
@@ -97,6 +101,10 @@ function LandingPage() {
             Begin assisted search
           </button>
         </article>
+      </section>
+
+      <section className="quick-check-workbench" id="quick-check" aria-label="Quick Check">
+        <QuickCheckPanel />
       </section>
 
       <section className="search-workbench" id="assisted-search" aria-label="Assisted search">
