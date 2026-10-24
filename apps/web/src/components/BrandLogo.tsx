@@ -8,9 +8,9 @@ interface BrandLogoProps {
 }
 
 /**
- * Renders the borderless DotcomSeekr target logo. If the supplied artwork
- * fails to load, it degrades to a plain text wordmark instead of showing a
- * broken image.
+ * Renders the borderless green-target DotcomSeekr logo. If the supplied
+ * artwork fails to load, it degrades to a plain text wordmark instead of
+ * showing a broken image.
  */
 export default function BrandLogo({ className = '', wordmarkFallback = true }: BrandLogoProps) {
   const [failed, setFailed] = useState(false);
