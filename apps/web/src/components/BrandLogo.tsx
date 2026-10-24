@@ -8,7 +8,7 @@ interface BrandLogoProps {
 }
 
 /**
- * Renders the compact rectangular DotcomSeekr logo. If the supplied artwork
+ * Renders the borderless DotcomSeekr target logo. If the supplied artwork
  * fails to load, it degrades to a plain text wordmark instead of showing a
  * broken image.
  */

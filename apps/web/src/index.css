@@ -78,11 +78,10 @@ a {
   align-items: center;
 }
 
-/* Supplied rectangular logo already contains the tagline, so only the
-   artwork is shown here. Width drives the size and the aspect ratio holds. */
+/* Transparent target artwork fades into the page without a surrounding plate. */
 .brand-logo {
   display: block;
-  width: clamp(110px, 12vw, 140px);
+  width: clamp(180px, 20vw, 260px);
   height: auto;
   object-fit: contain;
 }
