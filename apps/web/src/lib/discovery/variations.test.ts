@@ -104,14 +104,22 @@ describe('technique boundaries', () => {
     assert.equal(result.variations[0].spelling, 'spotless');
   });
 
-  it('accepts only genuine rhymes', () => {
-    const raw = { variations: [variation('mean'), variation('glean'), variation('green')] };
+  it('accepts rhymes by sound, not spelling', () => {
+    const raw = {
+      variations: [
+        variation('mean'),
+        variation('glean'),
+        variation('green'),
+        variation('machine'),
+        variation('gleam'),
+      ],
+    };
 
     const result = sanitizeVariations(raw, context('rhymes'));
 
     assert.deepEqual(
       result.variations.map((item) => item.spelling),
-      ['mean', 'glean']
+      ['mean', 'glean', 'green', 'machine']
     );
     assert.match(result.rejected[0].reason, /rhyme/i);
   });
@@ -193,7 +201,7 @@ describe('phrases name the changed word', () => {
     assert.match(result.rejected[0].reason, /which word/i);
   });
 
-  it('rejects a changed word that is not in the working name', () => {
+  it('records the changed word on an accepted phrase suggestion', () => {
     const result = sanitizeVariations(
       { variations: [variation('cleanbook', 'Ledger becomes book.', 'ledger')] },
       phraseContext
@@ -201,6 +209,57 @@ describe('phrases name the changed word', () => {
 
     assert.equal(result.variations[0].changedWord, 'ledger');
     assert.equal(result.variations.length, 1);
+  });
+
+  it('rejects a phrase suggestion that drops or reorders the other words', () => {
+    const result = sanitizeVariations(
+      {
+        variations: [
+          variation('book', 'Ledger becomes book.', 'ledger'),
+          variation('ledgerclean', 'Swaps the words.', 'clean'),
+        ],
+      },
+      phraseContext
+    );
+
+    assert.equal(result.variations.length, 0);
+    assert.match(result.rejected[0].reason, /other words/i);
+    assert.match(result.rejected[1].reason, /other words/i);
+  });
+
+  it('rejects the unchanged phrase presented as a change', () => {
+    const result = sanitizeVariations(
+      { variations: [variation('cleanledger', 'Same name.', 'ledger')] },
+      phraseContext
+    );
+
+    assert.match(result.rejected[0].reason, /working name/i);
+  });
+
+  it('rejects an affix presented as a phrase synonym', () => {
+    const result = sanitizeVariations(
+      { variations: [variation('cleanledgerly', 'Adds a suffix.', 'ledger')] },
+      phraseContext
+    );
+
+    assert.equal(result.variations.length, 0);
+    assert.match(result.rejected[0].reason, /prefix\/suffix/i);
+  });
+
+  it('rhymes the word the answer says it changed', () => {
+    const rhymeContext = context('rhymes', { mode: 'phrase', workingName: 'clean ledger' });
+    const accepted = sanitizeVariations(
+      { variations: [variation('cleanhedger', 'Ledger becomes hedger.', 'ledger')] },
+      rhymeContext
+    );
+    const rejected = sanitizeVariations(
+      { variations: [variation('cleanleader', 'Ledger becomes leader.', 'ledger')] },
+      rhymeContext
+    );
+
+    assert.equal(accepted.variations.length, 1);
+    assert.match(rejected.rejected[0].reason, /genuine rhyme/i);
+    assert.match(rejected.rejected[0].reason, /ledger/);
   });
 
   it('rejects a changed word outside the phrase', () => {
@@ -214,7 +273,37 @@ describe('phrases name the changed word', () => {
   });
 });
 
+describe('phrases without a replaced word', () => {
+  it('accepts a possessive before the whole phrase without a changed word', () => {
+    const result = sanitizeVariations(
+      { variations: [variation('mycleanledger')] },
+      context('possessives', { mode: 'phrase', workingName: 'clean ledger' })
+    );
+
+    assert.equal(result.variations[0].spelling, 'mycleanledger');
+  });
+
+  it('accepts an affix on the named word of a phrase', () => {
+    const result = sanitizeVariations(
+      { variations: [variation('cleanledgerly', 'Adds a suffix to ledger.', 'ledger')] },
+      context('affixes', { mode: 'phrase', workingName: 'clean ledger' })
+    );
+
+    assert.equal(result.variations[0].spelling, 'cleanledgerly');
+  });
+});
+
 describe('claim labels', () => {
+  it('rejects a quality verdict inside a reason', () => {
+    const result = sanitizeVariations(
+      { variations: [variation('spotless', 'A strong match for your brand.')] },
+      context('synonyms')
+    );
+
+    assert.equal(result.variations.length, 0);
+    assert.match(result.rejected[0].reason, /quality verdict/i);
+  });
+
   it('never uses unsupported quality verdicts', () => {
     const copy = [...Object.values(TECHNIQUE_LABELS), ...Object.values(TECHNIQUE_DESCRIPTIONS)]
       .join(' ')

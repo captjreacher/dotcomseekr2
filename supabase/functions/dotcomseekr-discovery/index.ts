@@ -91,10 +91,10 @@ function buildPrompt(body: Record<string, unknown>, technique: Technique) {
     'You must preserve the brand meaning the user selected and the commentary they wrote.',
     TECHNIQUE_RULES[technique],
     mode === 'phrase'
-      ? 'The working name is a phrase: name the single word each suggestion replaces or modifies in "changedWord"; hyphen suggestions may leave it out.'
+      ? 'The working name is a phrase. For synonyms, rhymes and affixes, change exactly one word, keep every other word in its place, and name the changed word in "changedWord". Possessives go before the whole phrase and hyphens join its words, so those do not need a changed word.'
       : 'The working name is one word: do not invent multi-word compounds, and do not use hyphens.',
-    `Return at most ${MAX_VARIATIONS_PER_ROUND} suggestions. Return fewer when good options are scarce; never pad the list.`,
-    'Never label a suggestion as strong, recommended or a premium pick. Give a short factual reason instead.',
+    `Return at most ${MAX_VARIATIONS_PER_ROUND} suggestions. Return fewer when good options are scarce: one good idea is better than five, and an empty list is better than filler. Never pad the list.`,
+    'Every suggestion must still carry the brand meaning the user selected and respect their commentary. Never label a suggestion as strong, recommended or a premium pick; give a short factual reason instead.',
     'Reply with JSON only, shaped as {"variations":[{"spelling":"...","reason":"...","changedWord":"..."}]}.',
     'Spellings are bare domain labels: lowercase letters, digits or hyphens, no extension.',
   ].join(' ');

@@ -5,6 +5,8 @@
 // way and checked another.
 import type { Technique } from './types.ts';
 
+export { isRhyme, rhymeKey } from './rhyme.ts';
+
 export const TECHNIQUES: readonly Technique[] = [
   'synonyms',
   'rhymes',
@@ -36,7 +38,7 @@ export const TECHNIQUE_RULES: Record<Technique, string> = {
   synonyms:
     'Every suggestion must mean the selected meaning. Do not pad with alliteration, invented filler or unrelated words that merely sound similar.',
   rhymes:
-    'Every suggestion must rhyme with a word of the working name. If a rhyme carries a weaker fit with the brand meaning, say so in its reason.',
+    'Every suggestion must rhyme in sound, not spelling, with a word of the working name: "green" and "machine" rhyme with "clean". Never offer a spelling lookalike that sounds different. If a rhyme carries a weaker fit with the brand meaning, say so in its reason.',
   affixes:
     'Every suggestion must be the working name plus a readable, pronounceable prefix or suffix. Reject awkward or unreadable stacks of letters.',
   possessives:
@@ -49,29 +51,6 @@ export const TECHNIQUE_RULES: Record<Technique, string> = {
 export function techniqueAvailable(technique: Technique, mode: 'word' | 'phrase'): boolean {
   if (technique === 'hyphens') return mode === 'phrase';
   return true;
-}
-
-/** Rhyme key: the last vowel cluster and everything after it. */
-export function rhymeKey(word: string): string {
-  const letters = word.toLowerCase().replace(/[^a-z]/g, '');
-  if (!letters) return '';
-
-  const vowels = 'aeiouy';
-  let lastVowel = -1;
-
-  for (let index = letters.length - 1; index >= 0; index -= 1) {
-    if (vowels.includes(letters[index])) {
-      lastVowel = index;
-      break;
-    }
-  }
-
-  if (lastVowel < 0) return letters;
-
-  let start = lastVowel;
-  while (start > 0 && vowels.includes(letters[start - 1])) start -= 1;
-
-  return letters.slice(start);
 }
 
 /** Candidate labels that describe a change without claiming a quality verdict. */
