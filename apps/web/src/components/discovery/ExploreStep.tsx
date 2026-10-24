@@ -27,6 +27,7 @@ interface ExploreStepProps {
   onCheckSelected: () => void;
   onSave: (variation: Variation, result: CheckResult) => void;
   onBranch: (spelling: string) => void;
+  onRecheck: (domain: string) => void;
   onShowShortlist: () => void;
 }
 
@@ -52,6 +53,7 @@ export default function ExploreStep(props: ExploreStepProps) {
     onCheckSelected,
     onSave,
     onBranch,
+    onRecheck,
     onShowShortlist,
   } = props;
 
@@ -175,6 +177,11 @@ export default function ExploreStep(props: ExploreStepProps) {
                                 {priceLabel(result.price, result.currency)}
                               </span>
                             )}
+                            {result.status === 'unknown' && (
+                              <span className="variation-price">
+                                {result.reason ?? 'No registrar answered for this name.'}
+                              </span>
+                            )}
                           </span>
                         ))
                       )}
@@ -203,6 +210,18 @@ export default function ExploreStep(props: ExploreStepProps) {
                           </a>
                         ) : null
                       )}
+                      {anyChecked
+                        .filter((result) => result.status === 'unknown')
+                        .map((result) => (
+                          <button
+                            key={`retry-${result.domain}`}
+                            className="link-button"
+                            type="button"
+                            onClick={() => onRecheck(result.domain)}
+                          >
+                            Retry {result.domain}
+                          </button>
+                        ))}
                       <button
                         className="link-button"
                         type="button"

@@ -932,6 +932,7 @@ textarea:focus {
 
 .brand-summary-title {
   margin: 0 0 6px;
+  overflow-wrap: anywhere;
   color: #eef5ff;
   font-weight: 700;
 }
@@ -1226,7 +1227,14 @@ textarea:focus {
 }
 
 .variation-row {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+  grid-template-columns:
+    minmax(140px, 200px) minmax(0, 1.4fr) minmax(170px, 1.6fr)
+    minmax(120px, 210px);
+  align-items: start;
+}
+
+.availability-badge {
+  white-space: nowrap;
 }
 
 .variation-select {
@@ -1266,10 +1274,6 @@ textarea:focus {
 .variation-price {
   color: #cdd4dd;
   font-size: 0.82rem;
-}
-
-.result-row .variation-availability {
-  grid-column: 1 / -1;
 }
 
 .rejected-panel {
@@ -1358,6 +1362,7 @@ textarea:focus {
 @media (max-width: 780px) {
   .brand-summary {
     flex-direction: column;
+    align-items: stretch;
   }
 
   .result-row,

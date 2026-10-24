@@ -227,6 +227,36 @@ export default function DiscoverPage() {
     }
   }
 
+  async function recheckDomain(domain: string) {
+    const extension = domain.split('.').slice(1).join('.');
+    const gate = checkGate.current.begin();
+    setChecking(true);
+    setExploreError('');
+
+    try {
+      const response = await api.checkDomains([domain], {
+        extensions: [extension],
+        signal: gate.signal,
+      });
+      if (!gate.isCurrent()) return;
+
+      const results = response.results
+        .map(toCheckResult)
+        .filter((result): result is CheckResult => Boolean(result));
+      if (results.length === 0) {
+        setExploreError('The checking service returned no answer for this name. Try again.');
+        return;
+      }
+
+      apply((prev) => withCheckedResults(prev, results));
+    } catch (error) {
+      if (!gate.isCurrent() || isRequestAborted(error)) return;
+      setExploreError(describeDiscoveryFailure(error));
+    } finally {
+      if (gate.isCurrent()) setChecking(false);
+    }
+  }
+
   function saveVariation(variation: Variation, result: CheckResult) {
     const technique = session.round?.technique;
     if (!technique) return;
@@ -350,6 +380,7 @@ export default function DiscoverPage() {
           onCheckSelected={() => void checkSelected()}
           onSave={saveVariation}
           onBranch={branchTo}
+          onRecheck={(domain) => void recheckDomain(domain)}
           onShowShortlist={() => setShortlistOpen(true)}
         />
       )}
