@@ -113,9 +113,8 @@ function buildPrompt(body: Record<string, unknown>, technique: Technique) {
     .join('\n');
 
   return { system, user };
-}async function readProviderError(
-  response: Response
-): Promise<{ code?: string; type?: string }> {
+}
+async function readProviderError(response: Response): Promise<{ code?: string; type?: string }> {
   try {
     const payload = (await response.json()) as {
       error?: { code?: unknown; type?: unknown };
@@ -128,10 +127,7 @@ function buildPrompt(body: Record<string, unknown>, technique: Technique) {
   }
 }
 
-async function generateVariations(
-  req: Request,
-  body: Record<string, unknown>
-): Promise<Response> {
+async function generateVariations(req: Request, body: Record<string, unknown>): Promise<Response> {
   const technique = readTechnique(body.technique);
   if (!technique) return json(req, { error: 'Choose an exploration technique.' }, 400);
 
@@ -287,6 +283,133 @@ async function generateVariations(
   });
 }
 
+// Wiktionary's REST API is used because it is an identifiable, stable source that
+// returns a documented definition shape. The older Free Dictionary API answers
+// with HTTP 530 from this network, so it cannot be relied on.
+const dictionaryEndpoint = 'https://en.wiktionary.org/api/rest_v1/page/definition/';
+const dictionaryTimeoutMs = 8_000;
+const dictionarySource = {
+  name: 'Wiktionary',
+  url: 'https://en.wiktionary.org/',
+  detail: 'Wikimedia Foundation definitions (CC BY-SA)',
+};
+
+/**
+ * Dictionary lookup, proxied server-side.
+ *
+ * The public dictionary does not send CORS headers, so the browser cannot call
+ * it directly. The response carries the definition source so the UI can show it.
+ */
+async function lookupDefinitions(req: Request, body: Record<string, unknown>): Promise<Response> {
+  const term = text(body.term, 80);
+  if (!term) return json(req, { error: 'Enter a word or phrase to look up.' }, 400);
+
+  let response: Response;
+  try {
+    response = await fetch(`${dictionaryEndpoint}${encodeURIComponent(term)}`, {
+      headers: {
+        Accept: 'application/json',
+        // Wikimedia asks clients to identify themselves.
+        'User-Agent': 'DotcomSeekr/0.1 (https://dotcomseekr.com)',
+      },
+      signal: AbortSignal.timeout(dictionaryTimeoutMs),
+    });
+  } catch {
+    return json(
+      req,
+      {
+        term,
+        senses: [],
+        source: null,
+        noEntry: true,
+        error: 'The dictionary could not be reached. You can describe the meaning yourself.',
+      },
+      200
+    );
+  }
+
+  if (response.status === 404) {
+    return json(req, { term, senses: [], source: null, noEntry: true }, 200);
+  }
+
+  if (!response.ok) {
+    return json(
+      req,
+      {
+        term,
+        senses: [],
+        source: null,
+        noEntry: true,
+        error: `The dictionary returned HTTP ${response.status}. You can describe the meaning yourself.`,
+      },
+      200
+    );
+  }
+
+  let payload: unknown = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  const senses = readDictionarySenses(payload);
+  if (senses.length === 0) return json(req, { term, senses: [], source: null, noEntry: true }, 200);
+
+  return json(req, { term, senses, source: dictionarySource, noEntry: false }, 200);
+}
+function readDictionarySenses(
+  payload: unknown
+): Array<{ partOfSpeech: string; definition: string }> {
+  if (!payload || typeof payload !== 'object') return [];
+
+  const record = payload as Record<string, unknown>;
+  const english = Array.isArray(record.en) ? record.en : [];
+  const entries = english.length > 0 ? english : Object.values(record).flat();
+  const senses: Array<{ partOfSpeech: string; definition: string }> = [];
+  const seen = new Set<string>();
+
+  for (const entry of entries) {
+    if (!entry || typeof entry !== 'object') continue;
+
+    const partOfSpeech = text((entry as { partOfSpeech?: unknown }).partOfSpeech, 40);
+    const definitions = (entry as { definitions?: unknown }).definitions;
+    if (!Array.isArray(definitions)) continue;
+
+    for (const definition of definitions) {
+      const value = plainText(
+        typeof (definition as { definition?: unknown }).definition === 'string'
+          ? ((definition as { definition: string }).definition as string)
+          : ''
+      ).slice(0, 280);
+      if (!value) continue;
+
+      const key = value.toLowerCase();
+      if (seen.has(key)) continue;
+
+      seen.add(key);
+      senses.push({ partOfSpeech: partOfSpeech.toLowerCase(), definition: value });
+      if (senses.length >= 8) return senses;
+    }
+  }
+
+  return senses;
+}
+
+/** Wiktionary returns HTML fragments inside definitions. */
+function plainText(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 async function checkDomains(req: Request, body: Record<string, unknown>): Promise<Response> {
   const requested = Array.isArray(body.domains)
     ? body.domains.filter((value): value is string => typeof value === 'string')
@@ -343,6 +466,7 @@ Deno.serve(async (req) => {
 
     if (action === 'check') return await checkDomains(req, body);
     if (action === 'variations') return await generateVariations(req, body);
+    if (action === 'definitions') return await lookupDefinitions(req, body);
 
     return json(req, { error: 'Unknown action.' }, 400);
   } catch (error) {

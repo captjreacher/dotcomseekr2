@@ -1,14 +1,15 @@
 // Dictionary definitions for the brand step.
 //
-// Definitions come from the Free Dictionary API (Wiktionary-derived) and are
-// always shown with that attribution. A phrase with no entry is reported as
-// having no entry; nothing is invented to fill the gap.
+// Definitions come from Wiktionary and are always shown with that attribution.
+// The lookup is proxied through the discovery function so one place parses the
+// source's HTML-bearing definitions, and a phrase with no entry is reported as
+// having no entry; nothing is invented.
 import { normalizeOriginal } from './domains.ts';
 
 export const DICTIONARY_SOURCE = {
-  name: 'Free Dictionary API',
-  url: 'https://dictionaryapi.dev/',
-  detail: 'Wiktionary-derived definitions',
+  name: 'Wiktionary',
+  url: 'https://en.wiktionary.org/',
+  detail: 'Wikimedia Foundation definitions (CC BY-SA)',
 } as const;
 
 export interface DictionarySense {
@@ -25,38 +26,52 @@ export interface DictionaryLookup {
   error?: string;
 }
 
-const endpoint = 'https://api.dictionaryapi.dev/api/v2/entries/en/';
 const maxSenses = 8;
-const maxDefinitionLength = 280;
+
+interface LookupOptions {
+  signal?: AbortSignal;
+  timeoutMs?: number;
+  fetchImpl?: typeof fetch;
+  /** Functions base URL; defaults to the configured Vite env value. */
+  functionsUrl?: string;
+}
+
+function functionsBase(): string {
+  const configured = import.meta.env?.VITE_SUPABASE_FUNCTIONS_URL ?? '';
+  return configured.replace(/\/$/, '');
+}
 
 export async function lookupDefinitions(
   term: string,
-  options: {
-    signal?: AbortSignal;
-    timeoutMs?: number;
-    fetchImpl?: typeof fetch;
-  } = {}
+  options: LookupOptions = {}
 ): Promise<DictionaryLookup> {
   const value = normalizeOriginal(term);
   const base: DictionaryLookup = { term: value, senses: [], source: null, noEntry: false };
 
   if (!value) return { ...base, noEntry: true };
 
+  const functionsUrl = (options.functionsUrl ?? functionsBase()).replace(/\/$/, '');
+  if (!functionsUrl) {
+    return {
+      ...base,
+      noEntry: true,
+      error: 'Dictionary lookup is not configured. You can describe the meaning yourself.',
+    };
+  }
+
   const fetchImpl = options.fetchImpl ?? fetch;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 8_000);
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 10_000);
   const abortFromCaller = () => controller.abort();
   options.signal?.addEventListener('abort', abortFromCaller, { once: true });
 
   try {
-    const response = await fetchImpl(`${endpoint}${encodeURIComponent(value)}`, {
-      headers: { Accept: 'application/json' },
+    const response = await fetchImpl(`${functionsUrl}/dotcomseekr-discovery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ action: 'definitions', term: value }),
       signal: controller.signal,
     });
-
-    if (response.status === 404) {
-      return { ...base, noEntry: true };
-    }
 
     if (!response.ok) {
       return {
@@ -66,10 +81,20 @@ export async function lookupDefinitions(
       };
     }
 
-    const payload: unknown = await response.json();
-    const senses = readSenses(payload);
+    const payload = (await response.json()) as {
+      senses?: unknown;
+      noEntry?: unknown;
+      error?: unknown;
+    };
+    const senses = readSenses(payload.senses);
 
-    if (senses.length === 0) return { ...base, noEntry: true };
+    if (senses.length === 0) {
+      return {
+        ...base,
+        noEntry: true,
+        error: typeof payload.error === 'string' ? payload.error : undefined,
+      };
+    }
 
     return { term: value, senses, source: DICTIONARY_SOURCE, noEntry: false };
   } catch (error) {
@@ -87,40 +112,30 @@ export async function lookupDefinitions(
   }
 }
 
-function readSenses(payload: unknown): DictionarySense[] {
-  if (!Array.isArray(payload) || payload.length === 0) return [];
+function readSenses(raw: unknown): DictionarySense[] {
+  if (!Array.isArray(raw)) return [];
 
   const senses: DictionarySense[] = [];
   const seen = new Set<string>();
 
-  for (const entry of payload) {
-    const meanings = (entry as { meanings?: unknown }).meanings;
-    if (!Array.isArray(meanings)) continue;
+  for (const item of raw) {
+    const definition =
+      typeof (item as { definition?: unknown }).definition === 'string'
+        ? ((item as { definition: string }).definition as string).trim()
+        : '';
+    if (!definition) continue;
 
-    for (const meaning of meanings) {
-      const partOfSpeech =
-        typeof (meaning as { partOfSpeech?: unknown }).partOfSpeech === 'string'
-          ? ((meaning as { partOfSpeech: string }).partOfSpeech as string).trim()
-          : '';
-      const definitions = (meaning as { definitions?: unknown }).definitions;
-      if (!Array.isArray(definitions)) continue;
+    const key = definition.toLowerCase();
+    if (seen.has(key)) continue;
 
-      for (const definition of definitions) {
-        const text =
-          typeof (definition as { definition?: unknown }).definition === 'string'
-            ? ((definition as { definition: string }).definition as string).trim()
-            : '';
-        if (!text) continue;
+    const partOfSpeech =
+      typeof (item as { partOfSpeech?: unknown }).partOfSpeech === 'string'
+        ? ((item as { partOfSpeech: string }).partOfSpeech as string).trim()
+        : '';
 
-        const trimmed = text.slice(0, maxDefinitionLength);
-        const key = trimmed.toLowerCase();
-        if (seen.has(key)) continue;
-
-        seen.add(key);
-        senses.push({ partOfSpeech, definition: trimmed });
-        if (senses.length >= maxSenses) return senses;
-      }
-    }
+    seen.add(key);
+    senses.push({ partOfSpeech, definition: definition.slice(0, 280) });
+    if (senses.length >= maxSenses) break;
   }
 
   return senses;

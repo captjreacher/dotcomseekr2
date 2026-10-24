@@ -17,7 +17,7 @@ DotcomSeekr is a full-stack monorepo combining deterministic lexicon expansion w
 The web app is a guided journey, not a keyword dump:
 
 - `/` - the front screen. A plain bar checks **one exact domain** you type (no alternatives, no added extensions) and a separate *Assisted search* entry offers the one-word or phrase journey.
-- `/discover?mode=word|phrase` - the wizard: establish the brand (original words, attributed definitions from the Free Dictionary API, your commentary, and the extensions you select), check the original name, then explore one technique at a time (synonyms, rhymes, prefixes/suffixes, possessives, hyphens).
+- `/discover?mode=word|phrase` - the wizard: establish the brand (original words, attributed definitions from Wiktionary, your commentary, and the extensions you select), check the original name, then explore one technique at a time (synonyms, rhymes, prefixes/suffixes, possessives, hyphens).
 
 Rules the UI and API enforce together:
 
