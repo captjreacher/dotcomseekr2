@@ -134,6 +134,28 @@ export interface ProjectGraph {
   edges: any[];
 }
 
+export interface DiscoveryCheckResponse {
+  results: unknown[];
+  diagnostics?: {
+    provider?: string;
+    mode?: string;
+    checkedAt?: string;
+    verifiedCount?: number;
+    requestedCount?: number;
+    fallbackReason?: string;
+  };
+}
+
+export interface DiscoveryVariationResponse {
+  technique?: string;
+  mode?: string;
+  workingName?: string;
+  variations: unknown[];
+  rejected?: unknown[];
+  model?: string;
+  generatedAt?: string;
+}
+
 function normalizeEdgeProject(project: EdgeProject): Project {
   const initialPhrase = project.metadata?.initialPhrase || project.metadata?.initial_phrase || '';
 
@@ -347,6 +369,37 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(options),
+    });
+  },
+
+  // Guided discovery
+  async checkDomains(
+    domains: string[],
+    options: { extensions?: string[]; signal?: AbortSignal } = {}
+  ): Promise<DiscoveryCheckResponse> {
+    return requestJson<DiscoveryCheckResponse>(edgeFunctionUrl('dotcomseekr-discovery'), {
+      method: 'POST',
+      headers: edgeHeaders(),
+      body: JSON.stringify({
+        action: 'check',
+        domains,
+        extensions: options.extensions,
+      }),
+      signal: options.signal,
+      timeoutMs: 45_000,
+    });
+  },
+
+  async generateVariations(
+    body: object,
+    options: RequestOptions = {}
+  ): Promise<DiscoveryVariationResponse> {
+    return requestJson<DiscoveryVariationResponse>(edgeFunctionUrl('dotcomseekr-discovery'), {
+      method: 'POST',
+      headers: edgeHeaders(),
+      body: JSON.stringify(body),
+      signal: options.signal,
+      timeoutMs: 35_000,
     });
   },
 

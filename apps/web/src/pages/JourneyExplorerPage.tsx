@@ -6,8 +6,6 @@ import SiteHeader from '../components/SiteHeader';
 import { getAvailabilityLabel, getAvailabilityStatus } from '../lib/availability';
 import { isRequestAborted, isRequestTimeout } from '../lib/request';
 
-type MatchTier = 'Premium Pick' | 'Recommended' | 'Strong Match';
-
 const strategyOrder = [
   'Exact match',
   'Synonym ideas',
@@ -261,7 +259,7 @@ function JourneyExplorerPage() {
       <section className="suggestions-section">
         <div className="section-heading">
           <p className="eyebrow">Naming strategies</p>
-          <h2>Recommended domains by strategy</h2>
+          <h2>Domains by strategy</h2>
         </div>
 
         {topSuggestions.length > 0 ? (
@@ -311,17 +309,17 @@ function DomainSuggestionCard({
   onToggleSaved: () => void;
 }) {
   const domain = formatDomain(candidate);
-  const tier = getTier(candidate, index);
+  const strategy = getStrategyLabel(candidate);
   const availabilityStatus = getAvailabilityStatus(candidate);
   const availability = getAvailabilityLabel(candidate);
-  const tags = getTags(candidate, tier);
-  const rationale = getRationale(candidate, tier);
+  const tags = getTags(candidate);
+  const rationale = getRationale(candidate);
   const registrationUrl = getRegistrationUrl(candidate);
 
   return (
     <article className={`domain-card ${index === 0 ? 'featured' : ''}`}>
       <div className="card-topline">
-        <span className={`tier-badge ${tier === 'Premium Pick' ? 'premium' : ''}`}>{tier}</span>
+        {strategy && <span className="tier-badge">{strategy}</span>}
         <span className={`availability-badge ${availabilityStatus}`}>{availability}</span>
       </div>
 
@@ -361,33 +359,22 @@ function formatDomain(candidate: Candidate) {
   return `${candidate.domain_name}.${candidate.tld}`;
 }
 
-function getTier(candidate: Candidate, index: number): MatchTier {
-  if (index === 0 || candidate.score_total >= 86) return 'Premium Pick';
-  if (candidate.score_total >= 70) return 'Recommended';
-  return 'Strong Match';
-}
-
-function getTags(candidate: Candidate, tier: MatchTier) {
+function getTags(candidate: Candidate) {
   const tags = new Set<string>();
   const strategy = getStrategyLabel(candidate);
-  tags.add(tier === 'Premium Pick' ? 'Premium Feel' : 'Strong Match');
 
   if (strategy) tags.add(strategy);
-  if (candidate.domain_name.length <= 12) tags.add('Clean & Memorable');
-  if (candidate.tld === 'com') tags.add('Classic .com');
-  if (candidate.tld === 'ai') tags.add('AI Friendly');
+  if (candidate.domain_name.length <= 12) tags.add('Short label');
+  if (candidate.tld === 'com') tags.add('.com');
+  if (candidate.tld === 'ai') tags.add('.ai');
 
   return [...tags].slice(0, 4);
 }
 
-function getRationale(candidate: Candidate, tier: MatchTier) {
+function getRationale(candidate: Candidate) {
   const metadataRationale = candidate.availability_data?.rationale;
   if (typeof metadataRationale === 'string' && metadataRationale) {
     return metadataRationale;
-  }
-
-  if (tier === 'Premium Pick') {
-    return 'A polished lead option with a clear startup feel and easy recall.';
   }
 
   if (candidate.tld === 'com') {
@@ -415,7 +402,7 @@ function groupByStrategy(candidates: Candidate[]) {
   const groups = new Map<string, Candidate[]>();
 
   for (const candidate of candidates) {
-    const label = getStrategyLabel(candidate) || 'Recommended';
+    const label = getStrategyLabel(candidate) || 'Other ideas';
     groups.set(label, [...(groups.get(label) ?? []), candidate]);
   }
 

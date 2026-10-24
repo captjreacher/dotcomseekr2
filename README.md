@@ -12,6 +12,42 @@ DotcomSeekr is a full-stack monorepo combining deterministic lexicon expansion w
 - **Engine**: Deterministic generation + provider-neutral creative enrichment
 - **Monorepo**: npm workspaces
 
+## Guided discovery
+
+The web app is a guided journey, not a keyword dump:
+
+- `/` - the front screen. A plain bar checks **one exact domain** you type (no alternatives, no added extensions) and a separate *Assisted search* entry offers the one-word or phrase journey.
+- `/discover?mode=word|phrase` - the wizard: establish the brand (original words, attributed definitions from Wiktionary, your commentary, and the extensions you select), check the original name, then explore one technique at a time (synonyms, rhymes, prefixes/suffixes, possessives, hyphens).
+
+Rules the UI and API enforce together:
+
+- A round proposes at most **five** names, each with a short reason, before any availability check.
+- Only the names you select are checked, and only with the extensions you selected (at most 15 domains per check).
+- Availability has four truthful states: **Available**, **Premium available**, **Not available**, **Unable to verify**. A fallback or mock answer is `unknown` and is never shown as available or taken.
+- Hyphens need a multi-word name: a single word has no word boundary to hyphenate.
+- Phrases name the word being replaced or modified, and every suggestion is validated server-side against the chosen technique.
+- Saved names live in `sessionStorage` for the current browser tab and are deduplicated. Registration links are handoffs to a registrar, not a completed purchase.
+
+### AI configuration
+
+Variation generation runs server-side in `dotcomseekr-discovery` with a structured JSON request to OpenAI. The browser never sees a provider credential. Configuration:
+
+```bash
+# required: project secret, never exposed to the browser
+supabase secrets set OPENAI_API_KEY=... --project-ref <ref>
+# optional model override (default: gpt-4o-mini)
+supabase secrets set DISCOVERY_MODEL=gpt-4o-mini --project-ref <ref>
+```
+
+If the provider is unconfigured, rate limited or out of credit, the endpoint reports that state (for example `code: "ai_quota"` with the provider error code) and the UI shows the blocker. There is deliberately **no deterministic fallback generator**, because a different generator would silently change what you asked for.
+
+### Deploying the guided flow
+
+```bash
+supabase functions deploy dotcomseekr-discovery --project-ref <ref> --use-api
+```
+
+The legacy `/create` and `/ideas/:id` routes are kept for existing searches. `e030dc4` (parallel registrar batches) remains unmerged: Dynadot allows one in-flight request per account.
 ## Features
 
 ### Core Intelligence Engine
