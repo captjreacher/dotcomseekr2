@@ -1,23 +1,18 @@
+import { requestJson } from './request';
+
+export {
+  DEFAULT_TIMEOUT_MS,
+  DOMAIN_SEARCH_TIMEOUT_MS,
+  RequestError,
+  isRequestAborted,
+  isRequestTimeout,
+  requestJson,
+} from './request';
+
 export const API_MODE = import.meta.env.VITE_API_MODE || 'fastify';
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 export const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || '';
 export const USE_EDGE_API = API_MODE === 'edge';
-
-export async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
-  let response: Response;
-
-  try {
-    response = await fetch(url, init);
-  } catch {
-    throw new Error('We could not reach the naming service. Check your connection and try again.');
-  }
-
-  if (!response.ok) {
-    throw new Error('We could not generate suggestions right now. Please try again.');
-  }
-
-  return response.json();
-}
 
 export function edgeFunctionUrl(name: string) {
   if (!FUNCTIONS_URL) {

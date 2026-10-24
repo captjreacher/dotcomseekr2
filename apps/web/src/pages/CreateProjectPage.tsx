@@ -1,14 +1,14 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { api } from '../services/api';
+import SearchProgress, { SearchStage } from '../components/SearchProgress';
 import SiteHeader from '../components/SiteHeader';
+import { isRequestAborted, isRequestTimeout } from '../lib/request';
+import { api } from '../services/api';
 
-const progressSteps = [
-  'Reading your core words...',
-  'Generating smart permutations...',
-  'Checking availability...',
-  'Curating the best matches...',
-];
+interface CreatedProject {
+  signature: string;
+  id: string;
+}
 
 function CreateProjectPage() {
   const navigate = useNavigate();
@@ -21,48 +21,105 @@ function CreateProjectPage() {
     .map((value) => value.trim())
     .filter(Boolean);
   const [brandName, setBrandName] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [stage, setStage] = useState<SearchStage | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [error, setError] = useState('');
-  const [stepIndex, setStepIndex] = useState(0);
+
+  const attemptRef = useRef(0);
+  const controllerRef = useRef<AbortController | null>(null);
+  const createdProjectRef = useRef<CreatedProject | null>(null);
+
+  const loading = stage !== null;
 
   useEffect(() => {
-    if (!loading) return;
+    if (!stage) return;
 
+    const startedAt = Date.now();
+    setElapsedSeconds(0);
     const timer = window.setInterval(() => {
-      setStepIndex((current) => Math.min(current + 1, progressSteps.length - 1));
-    }, 850);
+      setElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000));
+    }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [loading]);
+  }, [stage]);
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
+  useEffect(() => {
+    return () => {
+      attemptRef.current += 1;
+      controllerRef.current?.abort();
+    };
+  }, []);
+
+  async function runSearch() {
     const trimmedIdea = idea.trim();
 
     if (!trimmedIdea) return;
 
+    const signature = JSON.stringify({
+      idea: trimmedIdea,
+      industry,
+      tone,
+      tlds: selectedTlds,
+      brandName: brandName.trim(),
+    });
+
+    const attempt = attemptRef.current + 1;
+    attemptRef.current = attempt;
+    controllerRef.current?.abort();
+
+    const controller = new AbortController();
+    controllerRef.current = controller;
+
     setError('');
-    setLoading(true);
-    setStepIndex(0);
+    setStage('creating');
 
     try {
-      const project = await api.createProject({
-        name: brandName.trim() || trimmedIdea,
-        description: 'Core words created in DotcomSeekr',
-        initialPhrase: trimmedIdea,
-        settings: { source: 'keyword-discovery', industry, tone, tlds: selectedTlds },
-      });
+      // Reuse the project from a failed attempt so retrying cannot create a duplicate.
+      let projectId =
+        createdProjectRef.current?.signature === signature ? createdProjectRef.current.id : null;
 
-      await api.searchDomains(project.id, trimmedIdea, {
+      if (!projectId) {
+        const project = await api.createProject(
+          {
+            name: brandName.trim() || trimmedIdea,
+            description: 'Core words created in DotcomSeekr',
+            initialPhrase: trimmedIdea,
+            settings: { source: 'keyword-discovery', industry, tone, tlds: selectedTlds },
+          },
+          { signal: controller.signal }
+        );
+
+        if (attempt !== attemptRef.current) return;
+
+        projectId = project.id;
+        createdProjectRef.current = { signature, id: projectId };
+      }
+
+      setStage('searching');
+
+      await api.searchDomains(projectId, trimmedIdea, {
         industry,
         tone,
         tlds: selectedTlds,
+        signal: controller.signal,
       });
-      navigate(`/ideas/${project.id}`);
-    } catch (err: any) {
-      setError(err.message || 'We could not generate suggestions. Please try again.');
-      setLoading(false);
+
+      // A timed-out or superseded attempt must never navigate.
+      if (attempt !== attemptRef.current) return;
+
+      setStage(null);
+      navigate(`/ideas/${projectId}`);
+    } catch (err) {
+      if (attempt !== attemptRef.current || isRequestAborted(err)) return;
+
+      setStage(null);
+      setError(describeFailure(err));
     }
+  }
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    void runSearch();
   };
 
   return (
@@ -124,24 +181,44 @@ function CreateProjectPage() {
             disabled={loading}
           />
 
-          {loading && (
-            <div className="progress-panel" aria-live="polite">
-              <div className="progress-bar">
-                <span style={{ width: `${((stepIndex + 1) / progressSteps.length) * 100}%` }} />
-              </div>
-              <p>{progressSteps[stepIndex]}</p>
+          {stage && <SearchProgress stage={stage} elapsedSeconds={elapsedSeconds} />}
+
+          {error && !loading && (
+            <div className="form-error-panel" role="alert">
+              <p className="form-error">{error}</p>
+              <button
+                className="secondary-action compact"
+                type="button"
+                onClick={() => void runSearch()}
+              >
+                Try again
+              </button>
             </div>
           )}
 
-          {error && <p className="form-error">{error}</p>}
-
           <button className="primary-action" type="submit" disabled={loading || !idea.trim()}>
-            {loading ? 'Finding your best options' : 'Generate suggestions'}
+            {loading
+              ? stage === 'creating'
+                ? 'Creating your search...'
+                : 'Finding your best options'
+              : 'Generate suggestions'}
           </button>
         </form>
       </section>
     </main>
   );
+}
+
+function describeFailure(error: unknown) {
+  if (isRequestTimeout(error)) {
+    return 'Live availability checks took too long, so we stopped waiting. Please try again.';
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  return 'We could not generate suggestions. Please try again.';
 }
 
 export default CreateProjectPage;
