@@ -78,11 +78,12 @@ a {
   align-items: center;
 }
 
-/* Supplied rectangular logo already contains the tagline, so only the
-   artwork is shown here. Width drives the size and the aspect ratio holds. */
+/* Transparent target artwork fades into the page without a surrounding plate.
+   Width drives the size; the square artwork keeps its aspect ratio, and the
+   tagline stays part of the image rather than being repeated in markup. */
 .brand-logo {
   display: block;
-  width: clamp(110px, 12vw, 140px);
+  width: clamp(150px, 15vw, 200px);
   height: auto;
   object-fit: contain;
 }
