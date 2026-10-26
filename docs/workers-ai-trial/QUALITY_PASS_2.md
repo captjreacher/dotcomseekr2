@@ -28,9 +28,9 @@ pass-2 prompt.
   selected meaning and commentary, and each technique is limited to what it may
   modify. No other technique is used to fill a weak round.
 
-The prompt, technique descriptions and validator share version
-**`2026-10-26.2`** (`apps/web/src/lib/discovery/versions.ts`). The deployed health
-endpoint reports the prompt, validator and technique versions alongside the model.
+The prompt and technique rules are version **`2026-10-26.2`**; the validator is
+**`2026-10-26.3`** after the recognised-compound rule (`apps/web/src/lib/discovery/versions.ts`).
+The deployed health endpoint reports all three versions alongside the model.
 
 ### Hosted frontend
 
@@ -56,13 +56,13 @@ is exposed. `/__logout` clears the gate cookie.
 | ------------------------------ | ------------------------------------------------------------------------------------- |
 | API Worker                     | `dotcomseekr-discovery-trial`                                                         |
 | API URL                        | https://dotcomseekr-discovery-trial.mike-f16.workers.dev                              |
-| API version ID                 | `ff41c493-f1b1-4def-8b47-dd0932c77e9f`                                                |
-| Deployed source commit         | `c1091d4c6fddb578d976c663369a0fc96e740e43`                                            |
-| Deployment label               | `trial-20261026T085737Z-c1091d4`                                                      |
+| API version ID                 | `e772ce43-d3d2-4238-a91e-5eb7566111f3`                                                |
+| Deployed source commit         | `a38d7d50fb14483a0591bb0cb3542b00a3de7f17`                                            |
+| Deployment label               | `trial-20261026T090120Z-a38d7d5`                                                      |
 | Frontend Worker                | `dotcomseekr-discovery-trial-web`                                                     |
 | Frontend version ID            | `4a79045c-26e0-43a9-957b-192500fa1e42`                                                |
 | Model                          | `@cf/meta/llama-3.3-70b-instruct-fp8-fast`                                            |
-| Prompt / validator / technique | `2026-10-26.2`                                                                        |
+| Prompt / validator / technique | `2026-10-26.2` / `2026-10-26.3` / `2026-10-26.2`                                       |
 | Pricing source                 | https://developers.cloudflare.com/workers-ai/platform/pricing/ (retrieved 2026-10-26) |
 
 The deployment label and source SHA are returned by `/v1/health`, so a later matrix
@@ -74,8 +74,8 @@ commit itself is documentation-only and does not change the deployed Worker.
 Checked against the deployed URLs on 2026-10-26:
 
 - `/v1/health` returned `status: ok`, the Workers AI provider, the exact model above,
-  source SHA `c1091d4…`, prompt/validator/technique `2026-10-26.2` and the pricing
-  source/date.
+  source SHA `a38d7d5…`, prompt/validator/technique `2026-10-26.2` / `2026-10-26.3` /
+  `2026-10-26.2`, and the pricing source/date.
 - The hosted frontend sent an unauthenticated request to `/login?next=%2F` (302).
   The login page returned 200 HTML with a code input and a restrictive CSP.
 - A valid tester code posted to `/__auth` returned 303 to
