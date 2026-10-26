@@ -1,6 +1,11 @@
 # Cloudflare Workers AI trial — guided discovery quality pass
 
-Status: **quality pass complete; branch unmerged; production unchanged.**
+Status: **pass 1 archived; branch unmerged; production unchanged.**
+
+> Pass 2 supersedes the affix and rhyme boundaries described here and adds the
+> hosted tester frontend. See
+> [`workers-ai-trial/QUALITY_PASS_2.md`](workers-ai-trial/QUALITY_PASS_2.md). The
+> measurements below are pass-1 history and are not pass-2 results.
 
 - Branch: `trial/workers-ai-guided-discovery`, based directly on `feat/guided-discovery` (PR #6, still open).
 - Isolated deployment: `https://dotcomseekr-discovery-trial.mike-f16.workers.dev`

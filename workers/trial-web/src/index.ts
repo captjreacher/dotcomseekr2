@@ -102,7 +102,7 @@ function securityHeaders(): Record<string, string> {
     'referrer-policy': 'no-referrer',
     'x-content-type-options': 'nosniff',
     'x-frame-options': 'DENY',
-    'robots': 'noindex, nofollow',
+    robots: 'noindex, nofollow',
   };
 }
 
@@ -220,10 +220,13 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
     return redirect('/discover?mode=word');
   }
 
-  return new Response(loginPage(safeNext(url.searchParams.get('next')), url.searchParams.has('error')), {
-    status: url.searchParams.has('error') ? 401 : 200,
-    headers: { 'content-type': 'text/html; charset=utf-8', ...securityHeaders() },
-  });
+  return new Response(
+    loginPage(safeNext(url.searchParams.get('next')), url.searchParams.has('error')),
+    {
+      status: url.searchParams.has('error') ? 401 : 200,
+      headers: { 'content-type': 'text/html; charset=utf-8', ...securityHeaders() },
+    }
+  );
 }
 
 async function handleAuth(request: Request, env: Env): Promise<Response> {

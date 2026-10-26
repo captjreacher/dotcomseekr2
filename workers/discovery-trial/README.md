@@ -11,6 +11,12 @@ part of the production Worker and is not deployed by the normal build.
 - Real-word verification: rhymes and affixes are checked against Wiktionary
   (CC BY-SA 4.0) before suggestions are returned. Obsolete spellings, symbols and
   abbreviations are not accepted. The cache is keyed by `SHA-256(term)`.
+- Technique boundaries: an affix must be a bound linguistic prefix or suffix,
+  not a separate word (so `cranehire`, `craneworks` and `cranepro` are rejected in
+  affix rounds). Possessives stay in their own round, and a rhyme must be a
+  recognised word whose reason connects it to the selected meaning.
+- The hosted frontend at `https://dotcomseekr-discovery-trial-web.mike-f16.workers.dev`
+  serves the wizard behind a tester gate; see `../../workers/trial-web/README.md`.
 - Empty rounds are explicit: HTTP 200 with `variations: []` and
   `noResults: { reason, message }`, never filler.
 - Accounting: one D1 row per provider attempt, including retries and failures.
@@ -38,8 +44,9 @@ The full findings, measured costs and quality assessment are in
 
 Defaults are deliberately low: 10 turns/day and 18 provider calls/day per
 session; 80 turns/day and 100 calls/day shared; 150 turns, 250 calls and 400,000
-tokens overall. All of them reset or stop rather than enabling overage. The
-quality pass exhausted the shared 80-call daily allowance; it was not raised.
+tokens overall. All of them reset or stop rather than enabling overage. Pass 1
+exhausted all 80 shared daily naming turns; pass 2 did not raise the caps, so its
+fresh matrix could not run before the next UTC reset.
 
 ## Local commands
 
@@ -82,22 +89,29 @@ VITE_DISCOVERY_TRIAL_URL=https://dotcomseekr-discovery-trial.mike-f16.workers.de
   npm run dev -- --port 5173
 ```
 
-The default `TRIAL_ALLOWED_ORIGINS` allows `http://localhost:5173` and
-`http://localhost:4173`. Add any other preview origin explicitly.
+The default `TRIAL_ALLOWED_ORIGINS` allows `http://localhost:5173`,
+`http://localhost:4173` and the hosted trial frontend. Add any other preview
+origin explicitly.
 
 The reproducible matrix runner reads a tester code from
 `.trial/access-keys.local.txt` (gitignored) or `TRIAL_KEY`:
 
 ```bash
+# Full 4-case / 20-turn matrix
 node workers/discovery-trial/scripts/trial-matrix.mjs
+
+# Smaller 2-case / 10-turn pass (one word, one phrase)
+TRIAL_MATRIX_CASES=crane-machine,common-ground \
+  node workers/discovery-trial/scripts/trial-matrix.mjs
 ```
 
-It runs four ambiguous brand cases (two words, two phrases) across all five
-techniques and writes `docs/workers-ai-trial/results.json`. Single-word hyphens
-are expected to be refused before any provider call. The summary includes
-lexical calls/cache hits, empty-round reasons and a check that the previous
-failures (`drane`, `grane`, `krane`, `blueflorit`, `herswift`,
-`uncommonground`) did not leak into accepted suggestions.
+It writes `docs/workers-ai-trial/results-current.json` by default, so a new run
+never mixes with the archived `results.json`. Each result records the local
+source SHA, health metadata, model, deployment and prompt/validator/technique
+versions. Single-word hyphens are expected to be refused before any provider
+call. The summary includes lexical calls/cache hits, empty-round reasons and a
+check that the previous failures (`drane`, `grane`, `krane`, `blueflorit`,
+`herswift`, `uncommonground`) did not leak into accepted suggestions.
 
 ## Reading usage
 

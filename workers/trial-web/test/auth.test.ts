@@ -37,10 +37,7 @@ function request(path: string, init: RequestInit = {}): Request {
   return new Request(`${ORIGIN}${path}`, init);
 }
 
-function authRequest(
-  code: string,
-  options: { origin?: string; next?: string } = {}
-): Request {
+function authRequest(code: string, options: { origin?: string; next?: string } = {}): Request {
   const body = new URLSearchParams({ code, next: options.next ?? '/discover?mode=word' });
   return request('/__auth', {
     method: 'POST',
@@ -80,10 +77,7 @@ test('the login page never contains the access code', async () => {
 
 test('a valid code opens the gate with a hardened cookie and safe next path', async () => {
   const { env, assets } = makeEnv();
-  const response = await handleRequest(
-    authRequest(CODE, { next: '/discover?mode=phrase' }),
-    env
-  );
+  const response = await handleRequest(authRequest(CODE, { next: '/discover?mode=phrase' }), env);
 
   assert.equal(response.status, 303);
   assert.equal(response.headers.get('location'), '/discover?mode=phrase');
@@ -94,10 +88,7 @@ test('a valid code opens the gate with a hardened cookie and safe next path', as
   assert.equal(setCookie.includes(CODE), false);
 
   const cookie = cookieFrom(response);
-  const app = await handleRequest(
-    request('/discover?mode=phrase', { headers: { cookie } }),
-    env
-  );
+  const app = await handleRequest(request('/discover?mode=phrase', { headers: { cookie } }), env);
   assert.equal(app.status, 200);
   assert.equal(await app.text(), 'app shell');
   assert.equal(assets.calls, 1);
