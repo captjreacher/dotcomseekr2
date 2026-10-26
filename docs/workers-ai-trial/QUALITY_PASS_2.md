@@ -62,7 +62,7 @@ is exposed. `/__logout` clears the gate cookie.
 | Frontend Worker                | `dotcomseekr-discovery-trial-web`                                                     |
 | Frontend version ID            | `4a79045c-26e0-43a9-957b-192500fa1e42`                                                |
 | Model                          | `@cf/meta/llama-3.3-70b-instruct-fp8-fast`                                            |
-| Prompt / validator / technique | `2026-10-26.2` / `2026-10-26.3` / `2026-10-26.2`                                       |
+| Prompt / validator / technique | `2026-10-26.2` / `2026-10-26.3` / `2026-10-26.2`                                      |
 | Pricing source                 | https://developers.cloudflare.com/workers-ai/platform/pricing/ (retrieved 2026-10-26) |
 
 The deployment label and source SHA are returned by `/v1/health`, so a later matrix
@@ -238,6 +238,11 @@ npx --no-install tsc -p workers/trial-web/tsconfig.json --noEmit
 
 The Worker tests include a fake AI binding and fake lexical verifier, so they are
 fixtures. The live checks in section 3 are the only live evidence for this pass.
+
+PR checks: GitGuardian passed and the Cloudflare Workers Builds branch **preview**
+passed. `wrangler deployments list --name dotcomseekr2` still shows the latest
+production deployment on 2026-10-24, before this branch was pushed; the push did not
+release production.
 
 Not run:
 
