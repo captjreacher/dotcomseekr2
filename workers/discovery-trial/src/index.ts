@@ -18,6 +18,11 @@ import {
 } from '../../../apps/web/src/lib/discovery/variations.ts';
 import type { Technique } from '../../../apps/web/src/lib/discovery/types.ts';
 import {
+  PROMPT_VERSION,
+  TECHNIQUE_VERSION,
+  VALIDATOR_VERSION,
+} from '../../../apps/web/src/lib/discovery/versions.ts';
+import {
   DEFAULT_MODEL,
   PRICING_DATE,
   PRICING_SOURCE,
@@ -341,7 +346,15 @@ async function handleVariations(
         );
       }
 
-      const context = { technique, mode, workingName, original, previous };
+      const context = {
+        technique,
+        mode,
+        workingName,
+        original,
+        meaning: text(body.meaning, 400),
+        commentary: text(body.commentary, 400),
+        previous,
+      };
       const lexicalTerms = lexicalTermsForRound(output.parsed, context);
       let lexical: LexicalBatch | null = null;
 
@@ -587,6 +600,11 @@ async function handleRequest(
         status: 'ok',
         provider: configuredProvider(env),
         model: configuredModel(env) || DEFAULT_MODEL,
+        sourceSha: env.SOURCE_SHA?.trim() || 'unknown',
+        deploymentVersion: env.DEPLOYMENT_VERSION?.trim() || 'unknown',
+        promptVersion: PROMPT_VERSION,
+        validatorVersion: VALIDATOR_VERSION,
+        techniqueVersion: TECHNIQUE_VERSION,
         pricing: { source: PRICING_SOURCE, retrieved: PRICING_DATE },
         time: new Date().toISOString(),
       },

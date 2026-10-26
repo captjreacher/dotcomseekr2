@@ -20,13 +20,15 @@
   "vars": {
     "TRIAL_PROVIDER": "workers-ai",
     "TRIAL_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
-    "TRIAL_ALLOWED_ORIGINS": "http://localhost:5173,http://localhost:4173",
+    "TRIAL_ALLOWED_ORIGINS": "http://localhost:5173,http://localhost:4173,https://dotcomseekr-discovery-trial-web.mike-f16.workers.dev",
     "TRIAL_SESSION_TURNS_PER_DAY": "10",
     "TRIAL_SESSION_CALLS_PER_DAY": "18",
     "TRIAL_GLOBAL_TURNS_PER_DAY": "80",
     "TRIAL_GLOBAL_CALLS_PER_DAY": "100",
     "TRIAL_TOTAL_TURNS": "150",
     "TRIAL_TOTAL_CALLS": "250",
-    "TRIAL_TOTAL_TOKENS": "400000"
+    "TRIAL_TOTAL_TOKENS": "400000",
+    "SOURCE_SHA": "set-at-deploy",
+    "DEPLOYMENT_VERSION": "set-at-deploy"
   }
 }

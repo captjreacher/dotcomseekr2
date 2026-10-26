@@ -67,8 +67,9 @@ export default function ExploreStep(props: ExploreStepProps) {
       <h2 id="explore-step-title">How should we look at “{workingName}”?</h2>
       <p className="field-hint">
         Each round uses exactly one technique. The AI works inside your meaning and commentary, and
-        returns at most five names. Rhymes and affixes are checked against Wiktionary (CC BY-SA 4.0)
-        before they are shown.
+        returns at most five names, sometimes fewer when suitable options are scarce. Rhymes and
+        affixes are checked against Wiktionary (CC BY-SA 4.0), and an affix must be a bound prefix or
+        suffix rather than an extra word.
       </p>
 
       <div className="technique-grid" role="group" aria-label="Exploration techniques">

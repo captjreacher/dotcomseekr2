@@ -2,10 +2,13 @@
 // Exercise every guided-discovery technique against the isolated trial.
 //
 // The tester code is read from a local, gitignored file (or TRIAL_KEY). Results
-// are written to docs/workers-ai-trial/results.json so the report can quote
-// measured responses. Hyphens on a single word are expected to be refused before
-// any provider call: a single word has no word boundary to hyphenate.
+// are written to docs/workers-ai-trial/results-current.json by default so a new
+// run never overwrites or mixes with the archived matrix. Each run records the
+// local source SHA, the deployed Worker's health metadata, the model and the
+// prompt/validator versions. Hyphens on a single word are expected to be refused
+// before any provider call: a single word has no word boundary to hyphenate.
 import { randomUUID } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,6 +17,33 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '../../..');
 const endpoint =
   process.env.TRIAL_URL || 'https://dotcomseekr-discovery-trial.mike-f16.workers.dev';
+const outputPath = resolve(
+  repoRoot,
+  process.env.TRIAL_RESULTS_FILE || 'docs/workers-ai-trial/results-current.json'
+);
+
+function gitValue(args) {
+  try {
+    return execFileSync('git', args, { cwd: repoRoot, encoding: 'utf8' }).trim();
+  } catch {
+    return '';
+  }
+}
+
+async function readHealth() {
+  try {
+    const response = await fetch(`${endpoint}/v1/health`, {
+      headers: { accept: 'application/json' },
+    });
+    const body = await response.json().catch(() => null);
+    return { httpStatus: response.status, ...(body && typeof body === 'object' ? body : {}) };
+  } catch (error) {
+    return {
+      httpStatus: 0,
+      error: error instanceof Error ? error.message : 'The trial health endpoint was unreachable.',
+    };
+  }
+}
 
 function readKey() {
   if (process.env.TRIAL_KEY?.trim()) return process.env.TRIAL_KEY.trim();
@@ -67,6 +97,13 @@ const cases = [
 const techniques = ['synonyms', 'rhymes', 'affixes', 'possessives', 'hyphens'];
 const previousFailures = ['drane', 'grane', 'krane', 'blueflorit', 'herswift', 'uncommonground'];
 const key = readKey();
+const health = await readHealth();
+const sourceSha = gitValue(['rev-parse', 'HEAD']);
+const sourceDirty = Boolean(gitValue(['status', '--porcelain']));
+const deployedSourceSha =
+  typeof health.sourceSha === 'string' && health.sourceSha !== 'unknown' ? health.sourceSha : null;
+const sourceShaMatchesDeployment =
+  deployedSourceSha && sourceSha ? deployedSourceSha === sourceSha : null;
 const results = [];
 
 for (const item of cases) {
@@ -164,13 +201,25 @@ const summary = {
 const output = {
   generatedAt: new Date().toISOString(),
   endpoint,
-  model: results.find((result) => result.model)?.model ?? null,
+  archive: false,
+  sourceSha: sourceSha || 'unknown',
+  sourceDirty,
+  deployedSourceSha,
+  sourceShaMatchesDeployment,
+  deploymentVersion:
+    typeof health.deploymentVersion === 'string' ? health.deploymentVersion : 'unknown',
+  promptVersion: typeof health.promptVersion === 'string' ? health.promptVersion : 'unknown',
+  validatorVersion:
+    typeof health.validatorVersion === 'string' ? health.validatorVersion : 'unknown',
+  techniqueVersion:
+    typeof health.techniqueVersion === 'string' ? health.techniqueVersion : 'unknown',
+  model: results.find((result) => result.model)?.model ?? health.model ?? null,
+  health,
   summary,
   cases: results,
 };
 
 mkdirSync(resolve(repoRoot, 'docs/workers-ai-trial'), { recursive: true });
-const outputPath = resolve(repoRoot, 'docs/workers-ai-trial/results.json');
 writeFileSync(outputPath, `${JSON.stringify(output, null, 2)}\n`);
 console.log(`\nWrote ${outputPath}`);
 console.log(JSON.stringify(summary, null, 2));

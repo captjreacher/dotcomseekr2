@@ -5,6 +5,11 @@ import type { AiBinding, D1Database, D1PreparedStatement, D1Result, Env } from '
 import { estimateUsage } from '../src/pricing.ts';
 import type { LexicalBatch, LexicalVerifier } from '../src/lexical.ts';
 import { evaluateLimits, parseTrialLimits, sha256Hex, type UsageCounters } from '../src/trial.ts';
+import {
+  PROMPT_VERSION,
+  TECHNIQUE_VERSION,
+  VALIDATOR_VERSION,
+} from '../../../apps/web/src/lib/discovery/versions.ts';
 
 const ACCESS_CODE = 'dcs_trial_test_access_code';
 const SESSION = '6f9619ff-8b86-4d01-b4d0-00c04fc964ff';
@@ -127,12 +132,16 @@ class FakeAi implements AiBinding {
   }
 }
 
-function successPayload(spellings = ['quick', 'rapid'], changedWord = ''): unknown {
+function successPayload(
+  spellings = ['quick', 'rapid'],
+  changedWord = '',
+  reason = 'Means the same as the working name.'
+): unknown {
   return {
     response: {
       variations: spellings.map((spelling) => ({
         spelling,
-        reason: 'Means the same as the working name.',
+        reason,
         changedWord,
       })),
     },
@@ -198,14 +207,22 @@ function variationBody(overrides: Record<string, unknown> = {}): Record<string, 
   };
 }
 
-test('health reports the model without requiring tester access', async () => {
-  const { env } = await makeEnv([successPayload()]);
+test('health reports the model and version metadata without requiring tester access', async () => {
+  const { env } = await makeEnv([successPayload()], {
+    SOURCE_SHA: 'test-sha',
+    DEPLOYMENT_VERSION: 'test-deployment',
+  });
   const response = await handleRequest(request(null, { path: '/v1/health' }), env);
   const body = (await response.json()) as Record<string, unknown>;
 
   assert.equal(response.status, 200);
   assert.equal(body.provider, 'workers-ai');
   assert.equal(body.model, '@cf/meta/llama-3.3-70b-instruct-fp8-fast');
+  assert.equal(body.sourceSha, 'test-sha');
+  assert.equal(body.deploymentVersion, 'test-deployment');
+  assert.equal(body.promptVersion, PROMPT_VERSION);
+  assert.equal(body.validatorVersion, VALIDATOR_VERSION);
+  assert.equal(body.techniqueVersion, TECHNIQUE_VERSION);
 });
 
 test('a missing or unknown tester code is rejected without calling the model', async () => {
@@ -319,10 +336,27 @@ test('a malformed model shape is still a provider failure', async () => {
 
 test('rhymes must be recognised words and invented spellings are rejected', async () => {
   const lexical = new FakeLexical(['plane', 'train', 'grain']);
-  const { env, db } = await makeEnv([successPayload(['plane', 'train', 'grane'])], {});
+  const { env, db } = await makeEnv(
+    [
+      successPayload(
+        ['plane', 'train', 'grane'],
+        '',
+        'Relates to the industrial equipment and heavy lifting context.'
+      ),
+    ],
+    {}
+  );
 
   const response = await handleRequest(
-    request(variationBody({ technique: 'rhymes', workingName: 'crane', original: 'crane' })),
+    request(
+      variationBody({
+        technique: 'rhymes',
+        workingName: 'crane',
+        original: 'crane',
+        meaning: 'a tall machine that lifts and moves heavy loads',
+        commentary: 'Industrial equipment rental for construction teams.',
+      })
+    ),
     env,
     { lexical }
   );
@@ -387,6 +421,37 @@ test('affixes need a real word or a familiar brand affix', async () => {
   );
   assert.equal(body.rejected.length, 1);
   assert.match(body.rejected[0].reason, /grammatical ending/i);
+});
+
+test('affixes reject compounds built from separate words', async () => {
+  const lexical = new FakeLexical(['crane', 'hire', 'works', 'pro', 'craneable']);
+  const { env } = await makeEnv(
+    [
+      successPayload(
+        ['cranehire', 'craneworks', 'cranepro', 'craneable'],
+        '',
+        'Adds a bound prefix or suffix.'
+      ),
+    ],
+    {}
+  );
+
+  const response = await handleRequest(
+    request(variationBody({ technique: 'affixes', workingName: 'crane', original: 'crane' })),
+    env,
+    { lexical }
+  );
+  const body = (await response.json()) as Record<string, any>;
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(
+    body.variations.map((variation: { spelling: string }) => variation.spelling),
+    ['craneable']
+  );
+  assert.equal(body.rejected.length, 3);
+  assert.ok(
+    body.rejected.every((item: { reason: string }) => /separate word/i.test(item.reason))
+  );
 });
 
 test('a negating affix cannot be used to invent a longer phrase', async () => {

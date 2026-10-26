@@ -48,4 +48,8 @@ export interface Env {
   TRIAL_TOTAL_TURNS?: string;
   TRIAL_TOTAL_CALLS?: string;
   TRIAL_TOTAL_TOKENS?: string;
+
+  /** Recorded by deployment, never a credential. */
+  SOURCE_SHA?: string;
+  DEPLOYMENT_VERSION?: string;
 }

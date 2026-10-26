@@ -129,18 +129,79 @@ describe('technique boundaries', () => {
     assert.match(result.rejected[0].reason, /rhyme/i);
   });
 
-  it('accepts only readable affixes around the working name', () => {
+  it('accepts bound affixes but rejects a separate word attached to the name', () => {
     const raw = {
-      variations: [variation('getclean'), variation('cleanable'), variation('spotless')],
+      variations: [
+        variation('getclean'),
+        variation('cleanable'),
+        variation('reclean'),
+        variation('spotless'),
+      ],
     };
 
-    const result = sanitizeVariations(raw, context('affixes'));
+    const result = sanitizeVariations(
+      raw,
+      context('affixes', {
+        recognised: new Set(['clean', 'get', 'cleanable', 'reclean', 'spotless']),
+      })
+    );
 
     assert.deepEqual(
       result.variations.map((item) => item.spelling),
-      ['getclean', 'cleanable']
+      ['cleanable', 'reclean']
     );
-    assert.equal(result.rejected.length, 1);
+    assert.match(result.rejected[0].reason, /separate word/i);
+    assert.match(result.rejected[1].reason, /prefix or suffix/i);
+  });
+
+  it('rejects compounds made from separate words even when both parts are known', () => {
+    const spellings = [
+      'cranehire',
+      'craneworks',
+      'cranepro',
+      'cranelift',
+      'craneplus',
+      'cranemax',
+      'industrialscrane',
+    ];
+    const result = sanitizeVariations(
+      { variations: spellings.map((spelling) => variation(spelling)) },
+      context('affixes', {
+        workingName: 'crane',
+        original: 'crane',
+        recognised: new Set([
+          'crane',
+          'hire',
+          'works',
+          'pro',
+          'lift',
+          'plus',
+          'max',
+          'industrials',
+        ]),
+      })
+    );
+
+    assert.equal(result.variations.length, 0);
+    assert.equal(result.rejected.length, spellings.length);
+    assert.ok(result.rejected.every((item) => /separate word/i.test(item.reason)));
+  });
+
+  it('keeps possessives out of affix rounds', () => {
+    const result = sanitizeVariations(
+      { variations: [variation('mycrane'), variation('craneable')] },
+      context('affixes', {
+        workingName: 'crane',
+        original: 'crane',
+        recognised: new Set(['crane', 'my', 'craneable']),
+      })
+    );
+
+    assert.deepEqual(
+      result.variations.map((item) => item.spelling),
+      ['craneable']
+    );
+    assert.match(result.rejected[0].reason, /possessive/i);
   });
 
   it('accepts only possessives that keep the working name', () => {
@@ -192,6 +253,49 @@ describe('technique boundaries', () => {
     assert.match(result.rejected[0].reason, /recognised English word/i);
   });
 
+  it('rejects a recognised rhyme that only states the sound', () => {
+    const result = sanitizeVariations(
+      { variations: [variation('commonround', 'round rhymes with ground.', 'ground')] },
+      context('rhymes', {
+        mode: 'phrase',
+        workingName: 'common ground',
+        original: 'common ground',
+        meaning: 'shared agreement between people who disagree',
+        commentary:
+          'A mediation service for neighbours in disputes. Ground is figurative agreement, not soil.',
+        recognised: new Set(['common', 'ground', 'round']),
+      })
+    );
+
+    assert.equal(result.variations.length, 0);
+    assert.match(result.rejected[0].reason, /fits the selected meaning/i);
+  });
+
+  it('accepts a recognised rhyme that explains its brand connection', () => {
+    const result = sanitizeVariations(
+      {
+        variations: [
+          variation(
+            'commonround',
+            'round rhymes with ground and suggests a shared cycle of agreement.',
+            'ground'
+          ),
+        ],
+      },
+      context('rhymes', {
+        mode: 'phrase',
+        workingName: 'common ground',
+        original: 'common ground',
+        meaning: 'shared agreement between people who disagree',
+        commentary:
+          'A mediation service for neighbours in disputes. Ground is figurative agreement, not soil.',
+        recognised: new Set(['common', 'ground', 'round']),
+      })
+    );
+
+    assert.equal(result.variations[0].spelling, 'commonround');
+  });
+
   it('rejects an invented affix but allows a productive ending', () => {
     const result = sanitizeVariations(
       {
@@ -200,6 +304,7 @@ describe('technique boundaries', () => {
           variation('swiftness'),
           variation('swiftier'),
           variation('swiftify'),
+          variation('swiftish'),
         ],
       },
       context('affixes', {
@@ -211,7 +316,7 @@ describe('technique boundaries', () => {
 
     assert.deepEqual(
       result.variations.map((item) => item.spelling),
-      ['swiftly', 'swiftness', 'swiftify']
+      ['swiftly', 'swiftness', 'swiftify', 'swiftish']
     );
     assert.match(result.rejected[0].reason, /grammatical ending/i);
   });
@@ -396,7 +501,7 @@ describe('lexical term extraction', () => {
 
   it('offers a clear reason for an empty round', () => {
     assert.match(noResultsMessage('rhymes'), /recognised English rhyme/i);
-    assert.match(noResultsMessage('affixes'), /recognised word/i);
+    assert.match(noResultsMessage('affixes'), /linguistic prefix or suffix/i);
   });
 });
 

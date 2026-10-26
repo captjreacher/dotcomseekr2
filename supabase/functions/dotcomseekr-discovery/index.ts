@@ -209,6 +209,8 @@ async function generateVariations(req: Request, body: Record<string, unknown>): 
     mode,
     workingName,
     original,
+    meaning: text(body.meaning, 400),
+    commentary: text(body.commentary, 400),
     previous: Array.isArray(body.previous)
       ? body.previous.filter((value): value is string => typeof value === 'string')
       : [],

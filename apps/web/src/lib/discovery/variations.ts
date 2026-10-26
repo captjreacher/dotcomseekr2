@@ -19,6 +19,10 @@ export interface VariationContext {
   original: string;
   /** Spellings already shown in earlier rounds, normalized. */
   previous: readonly string[];
+  /** Selected brand meaning; used to judge whether a rhyme is relevant. */
+  meaning?: string;
+  /** Brand commentary; used with the meaning to judge rhyme relevance. */
+  commentary?: string;
   /**
    * Words confirmed by an independent lexical source. Undefined means the
    * caller has not run that check; the browser uses this when revalidating a
@@ -37,20 +41,83 @@ const MAX_SPELLING_LENGTH = 40;
 const MIN_HYPHEN_SIDE = 3;
 
 /**
- * Familiar word-forming pieces that are not dictionary headwords themselves.
- * Deliberately short: it is an allowlist for brand affixes, not a list of every
- * string the model might try.
+ * Bound linguistic affixes. A compound made from a separate word ("crane" +
+ * "hire") is not an affix, even when both parts are dictionary words. This is a
+ * curated morphological allowlist, not a blacklist of model guesses.
  */
-const PRODUCTIVE_AFFIXES = new Set([
+const LINGUISTIC_AFFIXES = new Set([
+  // Suffixes
+  'able',
+  'al',
+  'ance',
+  'dom',
+  'ed',
+  'en',
+  'ence',
+  'er',
+  'ery',
+  'ese',
   'esque',
+  'est',
+  'ful',
   'fy',
+  'hood',
+  'ian',
+  'ic',
+  'ical',
+  'ied',
+  'ier',
+  'ies',
   'ify',
+  'ing',
+  'ion',
   'ish',
+  'ism',
+  'ist',
+  'ity',
+  'ive',
+  'ize',
+  'less',
+  'ly',
+  'ment',
+  'ness',
   'ology',
-  'pro',
-  'sphere',
-  'verse',
-  'works',
+  'ous',
+  'ship',
+  's',
+  'ward',
+  'wise',
+  // Prefixes
+  'anti',
+  'bi',
+  'co',
+  'de',
+  'dis',
+  'ex',
+  'extra',
+  'hyper',
+  'inter',
+  'intra',
+  'macro',
+  'micro',
+  'mid',
+  'mini',
+  'mis',
+  'mono',
+  'multi',
+  'non',
+  'over',
+  'post',
+  'pre',
+  're',
+  'semi',
+  'sub',
+  'super',
+  'trans',
+  'tri',
+  'ultra',
+  'un',
+  'under',
 ]);
 
 /** Endings that must produce a real whole word, not just an invented one. */
@@ -199,7 +266,7 @@ export function noResultsMessage(technique: Technique): string {
     case 'rhymes':
       return 'No suggestion was a recognised English rhyme for this round. A thin round is better than invented words; try another technique.';
     case 'affixes':
-      return 'No suggestion used a recognised word or a readable brand affix. Try another technique, or refine the meaning and commentary.';
+      return 'No suggestion used a bound linguistic prefix or suffix that fits this brand. A separate word is not an affix; try another technique, or refine the meaning and commentary.';
     case 'possessives':
       return 'No possessive form read naturally for this brand. Try another technique.';
     case 'synonyms':
@@ -286,6 +353,7 @@ function techniqueReason(
       : typeof record.changed_word === 'string'
         ? (record.changed_word as string).trim().toLowerCase()
         : '';
+  const reason = typeof record.reason === 'string' ? record.reason : '';
 
   const tokens = phraseTokens(context.workingName);
   const isPhrase = context.mode === 'phrase';
@@ -320,7 +388,7 @@ function techniqueReason(
     case 'rhymes': {
       if (!isPhrase) {
         const rhyme = isRhyme(spelling, anchor) ? null : 'Not a genuine rhyme of the working name.';
-        return rhyme ?? wordReason(spelling, context);
+        return rhyme ?? wordReason(spelling, context) ?? rhymeContextReason(reason, context);
       }
 
       const slot = phraseSlot(spelling, tokens, changedWord);
@@ -328,7 +396,7 @@ function techniqueReason(
       if (!/^[a-z]+$/.test(slot.value)) return 'A rhyme replaces one word with one readable word.';
       if (!isRhyme(slot.value, changedWord)) return `Not a genuine rhyme of “${changedWord}”.`;
 
-      return wordReason(slot.value, context);
+      return wordReason(slot.value, context) ?? rhymeContextReason(reason, context);
     }
     case 'affixes': {
       if (startsWithPossessive(spelling, anchor)) {
@@ -379,38 +447,164 @@ function wordReason(word: string, context: VariationContext): string | null {
   return context.recognised.has(word) ? null : `“${word}” is not a recognised English word.`;
 }
 
+/**
+ * A rhyme also has to say how it relates to the brand. A bare "rhymes with X"
+ * is a sound match, not a naming suggestion; the reason must use at least one
+ * content word from the selected meaning or commentary.
+ */
+function rhymeContextReason(reason: string, context: VariationContext): string | null {
+  const brand = `${context.meaning ?? ''} ${context.commentary ?? ''}`.trim();
+  if (!brand) return null;
+
+  const nameStems = new Set(contentStems(`${context.workingName} ${context.original}`));
+  const brandStems = new Set(contentStems(brand).filter((stem) => !nameStems.has(stem)));
+  if (brandStems.size === 0) return null;
+
+  return contentStems(reason).some((stem) => brandStems.has(stem))
+    ? null
+    : 'Say how this rhyme fits the selected meaning and commentary, not just that it rhymes.';
+}
+
+const STOP_WORDS = new Set([
+  'about',
+  'after',
+  'again',
+  'also',
+  'and',
+  'any',
+  'are',
+  'because',
+  'been',
+  'before',
+  'being',
+  'between',
+  'both',
+  'brand',
+  'but',
+  'can',
+  'commentary',
+  'context',
+  'could',
+  'does',
+  'each',
+  'for',
+  'from',
+  'have',
+  'having',
+  'into',
+  'just',
+  'like',
+  'fits',
+  'fitting',
+  'implies',
+  'make',
+  'many',
+  'meaning',
+  'more',
+  'most',
+  'name',
+  'not',
+  'only',
+  'other',
+  'our',
+  'relate',
+  'related',
+  'relates',
+  'rhyme',
+  'rhymes',
+  'same',
+  'selected',
+  'some',
+  'sound',
+  'sounds',
+  'suggests',
+  'such',
+  'than',
+  'that',
+  'the',
+  'their',
+  'them',
+  'then',
+  'there',
+  'these',
+  'they',
+  'this',
+  'those',
+  'very',
+  'was',
+  'were',
+  'what',
+  'when',
+  'where',
+  'which',
+  'who',
+  'will',
+  'with',
+  'would',
+  'your',
+]);
+
+function contentStems(text: string): string[] {
+  return text
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter((word) => word.length >= 4 && !STOP_WORDS.has(word))
+    .map(stem)
+    .filter(Boolean);
+}
+
+function stem(word: string): string {
+  let value = word;
+
+  if (value.endsWith('ies') && value.length > 5) value = `${value.slice(0, -3)}y`;
+  else if (value.endsWith('ing') && value.length > 5) value = value.slice(0, -3);
+  else if (value.endsWith('ed') && value.length > 4) value = value.slice(0, -2);
+  else if (value.endsWith('ly') && value.length > 4) value = value.slice(0, -2);
+  else if (value.endsWith('es') && value.length > 4) value = value.slice(0, -2);
+  else if (value.endsWith('s') && value.length > 3) value = value.slice(0, -1);
+
+  if (value.length > 4 && value.endsWith('e')) value = value.slice(0, -1);
+  return value;
+}
+
 function affixReason(
   slot: string,
   fullSpelling: string,
   anchor: string,
   context: VariationContext
 ): string | null {
-  if (!context.recognised) return null;
-
   const parts = affixParts(slot, anchor);
   if (!parts) return null;
 
   // A whole recognised word is acceptable even if it contains a negating piece
-  // ("uncommon" is a word). Only an unrecognised result is rejected.
-  if (context.recognised.has(fullSpelling)) return null;
+  // ("uncommon" is a word). For a phrase, the whole joined spelling is checked
+  // first so a recognised modified word cannot smuggle in a negating affix.
+  if (context.recognised?.has(fullSpelling)) return null;
 
   if (isNegatingAffix(parts)) {
     return 'That prefix or suffix negates the working name instead of extending it.';
   }
 
-  if (context.recognised.has(slot)) return null;
+  if (context.recognised?.has(slot)) return null;
+
+  const isAffix = LINGUISTIC_AFFIXES.has(parts.part);
+  if (!isAffix) {
+    if (context.recognised?.has(parts.part)) {
+      return 'That is a separate word, not a linguistic prefix or suffix.';
+    }
+
+    return parts.part.length <= 2
+      ? 'That fragment is too short to read as a prefix or suffix.'
+      : 'That is not a recognised linguistic prefix or suffix.';
+  }
 
   if (parts.side === 'suffix' && GRAMMATICAL_SUFFIXES.has(parts.part)) {
-    return 'That grammatical ending is only allowed when it forms a real word.';
+    if (context.recognised && !context.recognised.has(slot)) {
+      return 'That grammatical ending is only allowed when it forms a real word.';
+    }
   }
 
-  if (context.recognised.has(parts.part) || PRODUCTIVE_AFFIXES.has(parts.part)) return null;
-
-  if (parts.part.length <= 2) {
-    return 'That fragment is too short to read as a prefix or suffix.';
-  }
-
-  return 'That affix is not a recognised word or a familiar brand affix.';
+  return null;
 }
 
 function isNegatingAffix(parts: AffixParts): boolean {

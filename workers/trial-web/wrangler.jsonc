@@ -1,0 +1,18 @@
+{
+  "name": "dotcomseekr-discovery-trial-web",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-05",
+  "workers_dev": true,
+  "assets": {
+    "directory": "../../apps/web/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "APP_ORIGIN": "https://dotcomseekr-discovery-trial-web.mike-f16.workers.dev"
+  }
+}

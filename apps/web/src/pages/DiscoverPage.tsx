@@ -171,6 +171,8 @@ export default function DiscoverPage() {
         mode: brand.mode,
         workingName: session.workingName,
         original: brand.original,
+        meaning: brand.meaning,
+        commentary: brand.commentary,
         previous: session.seen,
       });
 
