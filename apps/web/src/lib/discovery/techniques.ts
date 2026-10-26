@@ -27,22 +27,25 @@ export const TECHNIQUE_DESCRIPTIONS: Record<Technique, string> = {
   synonyms: 'Words that mean what your chosen meaning says, not loose associations.',
   rhymes: 'Genuine rhymes of the working name.',
   affixes: 'Readable prefixes or suffixes around your working name.',
-  possessives: 'my / your / our / his / her / their / its in front of your working name.',
+  possessives: 'my / your / our / their in front of your working name.',
   hyphens: 'A hyphen at a real word boundary in a multi-word name.',
 };
 
-export const POSSESSIVE_FORMS = ['my', 'your', 'our', 'his', 'her', 'their', 'its'] as const;
+export const POSSESSIVE_FORMS = ['my', 'your', 'our', 'their'] as const;
+
+/** Third-person possessives read like a sentence fragment in a brand name. */
+export const REJECTED_POSSESSIVE_FORMS = ['his', 'her', 'its'] as const;
 
 /** Technique rules quoted into the model prompt. */
 export const TECHNIQUE_RULES: Record<Technique, string> = {
   synonyms:
     'Every suggestion must mean the selected meaning. Do not pad with alliteration, invented filler or unrelated words that merely sound similar.',
   rhymes:
-    'Every suggestion must rhyme in sound, not spelling, with a word of the working name: "green" and "machine" rhyme with "clean". Never offer a spelling lookalike that sounds different. If a rhyme carries a weaker fit with the brand meaning, say so in its reason.',
+    'Every suggestion must be a recognised English word that rhymes in sound, not spelling, with a word of the working name: "green" and "machine" rhyme with "clean". Never invent a spelling, use an obsolete form, or offer a lookalike that sounds different. If a rhyme only fits a different sense of the meaning, do not offer it.',
   affixes:
-    'Every suggestion must be the working name plus a readable, pronounceable prefix or suffix. Reject awkward or unreadable stacks of letters.',
+    'Every suggestion must be the working name plus a readable prefix or suffix that is a recognised English word or a familiar brand affix. Reject letter stacks, grammatical endings that do not form a real word, and additions that negate the working name (un-, non-, anti-, dis-, -less).',
   possessives:
-    'Every suggestion must be one of my, your, our, his, her, their, its placed before the working name, and only where it reads naturally.',
+    'Every suggestion must be one of my, your, our or their placed before the working name. His, her and its are not allowed because they read awkwardly for a brand.',
   hyphens:
     'Only hyphenate a multi-word name at a real word boundary, replacing the space. Never split a single word into fragments.',
 };

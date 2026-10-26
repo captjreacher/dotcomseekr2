@@ -1,10 +1,18 @@
-import { API_URL, USE_EDGE_API, edgeFunctionUrl, edgeHeaders, requestJson } from '../lib/api';
+import {
+  API_URL,
+  RequestError,
+  USE_EDGE_API,
+  edgeFunctionUrl,
+  edgeHeaders,
+  requestJson,
+} from '../lib/api';
 import {
   DEFAULT_CHECK_LABEL,
   UNVERIFIED_CHECK_LABEL,
   isVerifiedAvailabilitySource,
 } from '../lib/availability';
 import { DOMAIN_SEARCH_TIMEOUT_MS } from '../lib/request';
+import { newTurnId, readTrialKey, trialEndpoint, trialHeaders } from '../lib/discovery/trial';
 
 function edgeProjectsUrl(projectId?: string) {
   const url = edgeFunctionUrl('dotcomseekr-projects');
@@ -152,6 +160,17 @@ export interface DiscoveryVariationResponse {
   workingName?: string;
   variations: unknown[];
   rejected?: unknown[];
+  noResults?: { reason?: string; message?: string };
+  lexical?: {
+    status?: string;
+    source?: string;
+    license?: string;
+    verified?: boolean;
+    calls?: number;
+    cacheHits?: number;
+    latencyMs?: number;
+    costUsd?: number;
+  };
   model?: string;
   generatedAt?: string;
 }
@@ -394,6 +413,33 @@ export const api = {
     body: object,
     options: RequestOptions = {}
   ): Promise<DiscoveryVariationResponse> {
+    // A build configured for the isolated trial keeps its variations on the
+    // Cloudflare Worker. There is no automatic fallback to the paid provider: a
+    // trial failure is shown as a failure. Without the trial URL the existing
+    // Supabase endpoint is used exactly as before.
+    const trialUrl = trialEndpoint();
+
+    if (trialUrl) {
+      if (!readTrialKey()) {
+        throw new RequestError(
+          'http',
+          'Enter the trial access code you were given before asking for suggestions.',
+          401
+        );
+      }
+
+      const payload = { ...(body as Record<string, unknown>) };
+      if (!payload.turnId) payload.turnId = newTurnId();
+
+      return requestJson<DiscoveryVariationResponse>(`${trialUrl}/v1/variations`, {
+        method: 'POST',
+        headers: trialHeaders(),
+        body: JSON.stringify(payload),
+        signal: options.signal,
+        timeoutMs: 35_000,
+      });
+    }
+
     return requestJson<DiscoveryVariationResponse>(edgeFunctionUrl('dotcomseekr-discovery'), {
       method: 'POST',
       headers: edgeHeaders(),

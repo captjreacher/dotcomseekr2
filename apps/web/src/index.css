@@ -967,6 +967,50 @@ textarea:focus {
   font-size: clamp(1.5rem, 2.6vw, 2rem);
 }
 
+.trial-access {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border: 1px solid rgba(143, 184, 255, 0.24);
+  border-radius: 10px;
+  background: rgba(143, 184, 255, 0.06);
+}
+
+.trial-access h2 {
+  margin: 4px 0 0;
+  font-size: 1.15rem;
+}
+
+.trial-access-copy .field-hint {
+  max-width: 680px;
+}
+
+.trial-access-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+
+.trial-access-form > div {
+  display: grid;
+  gap: 6px;
+  min-width: min(320px, 100%);
+}
+
+.trial-access-form label {
+  color: #9fa8b4;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.trial-access-status {
+  margin: 0;
+  color: #9fa8b4;
+  font-size: 0.85rem;
+}
+
 .step-actions {
   display: flex;
   flex-wrap: wrap;

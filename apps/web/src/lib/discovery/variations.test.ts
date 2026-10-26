@@ -7,7 +7,12 @@ import {
   TECHNIQUE_LABELS,
   techniqueAvailable,
 } from './techniques.ts';
-import { sanitizeVariations, type VariationContext } from './variations.ts';
+import {
+  lexicalTermsForRound,
+  noResultsMessage,
+  sanitizeVariations,
+  type VariationContext,
+} from './variations.ts';
 import type { Technique } from './types.ts';
 
 function context(
@@ -140,15 +145,90 @@ describe('technique boundaries', () => {
 
   it('accepts only possessives that keep the working name', () => {
     const raw = {
-      variations: [variation('myclean'), variation('yourclean'), variation('cleanmy')],
+      variations: [
+        variation('myclean'),
+        variation('yourclean'),
+        variation('ourclean'),
+        variation('theirclean'),
+        variation('cleanmy'),
+      ],
     };
 
     const result = sanitizeVariations(raw, context('possessives'));
 
     assert.deepEqual(
       result.variations.map((item) => item.spelling),
-      ['myclean', 'yourclean']
+      ['myclean', 'yourclean', 'ourclean', 'theirclean']
     );
+  });
+
+  it('rejects third-person possessives as awkward for a brand', () => {
+    const result = sanitizeVariations(
+      { variations: [variation('herswift'), variation('ourswift')] },
+      context('possessives', { workingName: 'swift', original: 'swift' })
+    );
+
+    assert.deepEqual(
+      result.variations.map((item) => item.spelling),
+      ['ourswift']
+    );
+    assert.match(result.rejected[0].reason, /third-person/i);
+  });
+
+  it('rejects a rhyme that is not a recognised English word', () => {
+    const result = sanitizeVariations(
+      { variations: [variation('plane'), variation('train'), variation('grane')] },
+      context('rhymes', {
+        workingName: 'crane',
+        original: 'crane',
+        recognised: new Set(['plane', 'train']),
+      })
+    );
+
+    assert.deepEqual(
+      result.variations.map((item) => item.spelling),
+      ['plane', 'train']
+    );
+    assert.match(result.rejected[0].reason, /recognised English word/i);
+  });
+
+  it('rejects an invented affix but allows a productive ending', () => {
+    const result = sanitizeVariations(
+      {
+        variations: [
+          variation('swiftly'),
+          variation('swiftness'),
+          variation('swiftier'),
+          variation('swiftify'),
+        ],
+      },
+      context('affixes', {
+        workingName: 'swift',
+        original: 'swift',
+        recognised: new Set(['swiftly', 'swiftness']),
+      })
+    );
+
+    assert.deepEqual(
+      result.variations.map((item) => item.spelling),
+      ['swiftly', 'swiftness', 'swiftify']
+    );
+    assert.match(result.rejected[0].reason, /grammatical ending/i);
+  });
+
+  it('rejects an affix that negates the whole phrase', () => {
+    const result = sanitizeVariations(
+      { variations: [variation('uncommonground', 'Adds un- to common.', 'common')] },
+      context('affixes', {
+        mode: 'phrase',
+        workingName: 'common ground',
+        original: 'common ground',
+        recognised: new Set(['common', 'ground', 'uncommon']),
+      })
+    );
+
+    assert.equal(result.variations.length, 0);
+    assert.match(result.rejected[0].reason, /negates/i);
   });
 });
 
@@ -293,6 +373,33 @@ describe('phrases without a replaced word', () => {
   });
 });
 
+describe('lexical term extraction', () => {
+  it('checks the replaced word of a phrase rhyme, not the joined phrase', () => {
+    const terms = lexicalTermsForRound(
+      { variations: [variation('blueflorit', 'Rhymes with orbit.', 'orbit')] },
+      context('rhymes', { mode: 'phrase', workingName: 'blue orbit' })
+    );
+
+    assert.deepEqual(terms, ['florit']);
+  });
+
+  it('checks both the spelling and the added affix piece', () => {
+    const terms = lexicalTermsForRound(
+      { variations: [variation('blueneoorbit', 'Adds neo-.', 'orbit')] },
+      context('affixes', { mode: 'phrase', workingName: 'blue orbit' })
+    );
+
+    assert.ok(terms.includes('blueneoorbit'));
+    assert.ok(terms.includes('neoorbit'));
+    assert.ok(terms.includes('neo'));
+  });
+
+  it('offers a clear reason for an empty round', () => {
+    assert.match(noResultsMessage('rhymes'), /recognised English rhyme/i);
+    assert.match(noResultsMessage('affixes'), /recognised word/i);
+  });
+});
+
 describe('claim labels', () => {
   it('rejects a quality verdict inside a reason', () => {
     const result = sanitizeVariations(
@@ -302,6 +409,29 @@ describe('claim labels', () => {
 
     assert.equal(result.variations.length, 0);
     assert.match(result.rejected[0].reason, /quality verdict/i);
+  });
+
+  it('rejects a suggestion whose own reason admits it does not fit', () => {
+    const result = sanitizeVariations(
+      {
+        variations: [
+          variation(
+            'commonwound',
+            'Rhymes with ground, but has a very negative connotation that does not fit the brand commentary.',
+            'ground'
+          ),
+        ],
+      },
+      context('rhymes', {
+        mode: 'phrase',
+        workingName: 'common ground',
+        original: 'common ground',
+        recognised: new Set(['common', 'ground', 'wound']),
+      })
+    );
+
+    assert.equal(result.variations.length, 0);
+    assert.match(result.rejected[0].reason, /does not fit/i);
   });
 
   it('never uses unsupported quality verdicts', () => {

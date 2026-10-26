@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import SiteHeader from '../components/SiteHeader';
 import BrandStep from '../components/discovery/BrandStep';
@@ -25,6 +25,7 @@ import {
   type DiscoverySession,
   type SessionStorageLike,
 } from '../lib/discovery/session';
+import { clearTrialKey, readTrialKey, saveTrialKey, trialEndpoint } from '../lib/discovery/trial';
 import { sanitizeVariations } from '../lib/discovery/variations';
 import type { BrandContext, CheckResult, Variation } from '../lib/discovery/types';
 import { isRequestAborted } from '../lib/request';
@@ -47,6 +48,7 @@ function tabStorage(): SessionStorageLike | null {
 export default function DiscoverPage() {
   const [params] = useSearchParams();
   const requestedMode = params.get('mode') === 'phrase' ? 'phrase' : 'word';
+  const trialUrl = trialEndpoint();
 
   const [session, setSession] = useState<DiscoverySession>(() => loadSession(tabStorage()));
   const [step, setStep] = useState<Step>(() =>
@@ -60,8 +62,11 @@ export default function DiscoverPage() {
   const [generating, setGenerating] = useState(false);
   const [checking, setChecking] = useState(false);
   const [exploreError, setExploreError] = useState('');
+  const [exploreNotice, setExploreNotice] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
   const [shortlistOpen, setShortlistOpen] = useState(false);
+  const [trialKey, setTrialKey] = useState(() => readTrialKey());
+  const [trialInput, setTrialInput] = useState('');
 
   const originalGate = useRef(createRequestGate());
   const generateGate = useRef(createRequestGate());
@@ -126,6 +131,7 @@ export default function DiscoverPage() {
     apply((prev) => withBrand(prev, brand));
     setOriginalResults({});
     setOriginalError('');
+    setExploreNotice('');
     originalAttempted.current = '';
     setStep('original');
   }
@@ -143,12 +149,18 @@ export default function DiscoverPage() {
       return;
     }
 
+    if (trialUrl && !trialKey) {
+      setExploreError('Enter the trial access code you were given before asking for suggestions.');
+      return;
+    }
+
     const request = variationRequest(session, technique);
     if (!request) return;
 
     const gate = generateGate.current.begin();
     setGenerating(true);
     setExploreError('');
+    setExploreNotice('');
 
     try {
       const response = await api.generateVariations(request, { signal: gate.signal });
@@ -163,13 +175,15 @@ export default function DiscoverPage() {
       });
 
       if (sanitized.variations.length === 0) {
-        setExploreError(
-          sanitized.rejected[0]?.reason ??
+        setExploreNotice(
+          response.noResults?.message ??
+            sanitized.rejected[0]?.reason ??
             'The AI returned no usable names for this technique. Try another technique.'
         );
         return;
       }
 
+      setExploreNotice('');
       apply((prev) =>
         withRound(prev, {
           technique,
@@ -271,6 +285,7 @@ export default function DiscoverPage() {
     apply((prev) => withWorkingName(prev, spelling));
     setOriginalResults({});
     setOriginalError('');
+    setExploreNotice('');
     originalAttempted.current = '';
     setSelected([]);
     setExploreError('');
@@ -282,10 +297,25 @@ export default function DiscoverPage() {
     originalAttempted.current = '';
     setOriginalResults({});
     setOriginalError('');
+    setExploreNotice('');
     setSelected([]);
     setExploreError('');
     setStep('brand');
     setShortlistOpen(false);
+  }
+
+  function saveTrialAccess(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const saved = saveTrialKey(trialInput);
+    setTrialKey(saved);
+    setTrialInput('');
+    if (saved) setExploreError('');
+  }
+
+  function forgetTrialAccess() {
+    clearTrialKey();
+    setTrialKey('');
+    setTrialInput('');
   }
 
   function toggleVariation(spelling: string) {
@@ -343,6 +373,50 @@ export default function DiscoverPage() {
         />
       )}
 
+      {trialUrl && step === 'explore' && (
+        <section className="trial-access" aria-labelledby="trial-access-title">
+          <div className="trial-access-copy">
+            <p className="eyebrow">Cloudflare Workers AI trial</p>
+            <h2 id="trial-access-title">Tester access</h2>
+            <p className="field-hint">
+              This build asks the isolated Cloudflare trial for suggestions. Enter the access code
+              you were given; it stays in this tab and is checked on the server.
+            </p>
+          </div>
+          <form className="trial-access-form" onSubmit={saveTrialAccess}>
+            <div>
+              <label htmlFor="trial-access-code">Trial access code</label>
+              <input
+                id="trial-access-code"
+                type="password"
+                value={trialInput}
+                onChange={(event) => setTrialInput(event.target.value)}
+                placeholder="dcs_trial_..."
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </div>
+            <button
+              className="secondary-action compact"
+              type="submit"
+              disabled={!trialInput.trim()}
+            >
+              {trialKey ? 'Replace code' : 'Use trial'}
+            </button>
+            {trialKey && (
+              <button className="link-button" type="button" onClick={forgetTrialAccess}>
+                Stop using trial
+              </button>
+            )}
+          </form>
+          <p className="trial-access-status" role="status">
+            {trialKey
+              ? 'Trial access is active for this tab. Usage is recorded against a pseudonymous session.'
+              : 'No trial access code is saved yet.'}
+          </p>
+        </section>
+      )}
+
       {step === 'brand' && (
         <BrandStep mode={mode} initial={session.brand} onContinue={handleBrand} />
       )}
@@ -369,10 +443,12 @@ export default function DiscoverPage() {
           generating={generating}
           checking={checking}
           error={exploreError}
+          notice={exploreNotice}
           shortlistCount={session.shortlist.length}
           onSelectTechnique={(technique) => {
             apply((prev) => withTechnique(prev, technique));
             setExploreError('');
+            setExploreNotice('');
           }}
           onGenerate={() => void generate()}
           onToggleVariation={toggleVariation}

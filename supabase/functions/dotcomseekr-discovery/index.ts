@@ -9,10 +9,8 @@
 // what the user asked for.
 import { json, parseTlds } from '../_shared/http.ts';
 import {
-  MAX_VARIATIONS_PER_ROUND,
-  TECHNIQUE_LABELS,
-  TECHNIQUE_RULES,
   TECHNIQUES,
+  buildVariationPrompt,
   joinLabel,
   sanitizeVariations,
   techniqueAvailable,
@@ -71,49 +69,6 @@ function text(value: unknown, maxLength: number): string {
   return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
 }
 
-function buildPrompt(body: Record<string, unknown>, technique: Technique) {
-  const mode = body.mode === 'phrase' ? 'phrase' : 'word';
-  const original = text(body.original, 80);
-  const workingName = text(body.workingName, 80) || original;
-  const meaning = text(body.meaning, 400);
-  const meaningSource = text(body.meaningSource, 120);
-  const commentary = text(body.commentary, 400);
-  const previous = Array.isArray(body.previous)
-    ? body.previous
-        .filter((value): value is string => typeof value === 'string')
-        .map((value) => value.trim().toLowerCase())
-        .filter(Boolean)
-        .slice(0, 40)
-    : [];
-
-  const system = [
-    'You propose domain name variations for one brand, using exactly one technique per answer.',
-    'You must preserve the brand meaning the user selected and the commentary they wrote.',
-    TECHNIQUE_RULES[technique],
-    mode === 'phrase'
-      ? 'The working name is a phrase. For synonyms, rhymes and affixes, change exactly one word, keep every other word in its place, and name the changed word in "changedWord". Possessives go before the whole phrase and hyphens join its words, so those do not need a changed word.'
-      : 'The working name is one word: do not invent multi-word compounds, and do not use hyphens.',
-    `Return at most ${MAX_VARIATIONS_PER_ROUND} suggestions. Return fewer when good options are scarce: one good idea is better than five, and an empty list is better than filler. Never pad the list.`,
-    'Every suggestion must still carry the brand meaning the user selected and respect their commentary. Never label a suggestion as strong, recommended or a premium pick; give a short factual reason instead.',
-    'Reply with JSON only, shaped as {"variations":[{"spelling":"...","reason":"...","changedWord":"..."}]}.',
-    'Spellings are bare domain labels: lowercase letters, digits or hyphens, no extension.',
-  ].join(' ');
-
-  const user = [
-    `Technique: ${TECHNIQUE_LABELS[technique]}.`,
-    `Original brand input: ${original}`,
-    `Working name for this round: ${workingName}`,
-    `Selected meaning: ${meaning || '(not supplied)'}`,
-    meaningSource ? `Meaning source: ${meaningSource}` : '',
-    commentary ? `Brand commentary: ${commentary}` : '',
-    previous.length > 0 ? `Already suggested (do not repeat): ${previous.join(', ')}` : '',
-    'Only this technique. Do not mix techniques.',
-  ]
-    .filter(Boolean)
-    .join('\n');
-
-  return { system, user };
-}
 async function readProviderError(response: Response): Promise<{ code?: string; type?: string }> {
   try {
     const payload = (await response.json()) as {
@@ -162,7 +117,7 @@ async function generateVariations(req: Request, body: Record<string, unknown>): 
   }
 
   const model = Deno.env.get('DISCOVERY_MODEL') || defaultModel;
-  const { system, user } = buildPrompt(body, technique);
+  const { system, user } = buildVariationPrompt(body, technique);
 
   let response: Response;
   try {

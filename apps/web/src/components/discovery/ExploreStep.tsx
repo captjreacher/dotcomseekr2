@@ -19,6 +19,7 @@ interface ExploreStepProps {
   generating: boolean;
   checking: boolean;
   error: string;
+  notice?: string;
   shortlistCount: number;
   onSelectTechnique: (technique: Technique) => void;
   onGenerate: () => void;
@@ -45,6 +46,7 @@ export default function ExploreStep(props: ExploreStepProps) {
     generating,
     checking,
     error,
+    notice,
     shortlistCount,
     onSelectTechnique,
     onGenerate,
@@ -65,7 +67,8 @@ export default function ExploreStep(props: ExploreStepProps) {
       <h2 id="explore-step-title">How should we look at “{workingName}”?</h2>
       <p className="field-hint">
         Each round uses exactly one technique. The AI works inside your meaning and commentary, and
-        returns at most five names.
+        returns at most five names. Rhymes and affixes are checked against Wiktionary (CC BY-SA 4.0)
+        before they are shown.
       </p>
 
       <div className="technique-grid" role="group" aria-label="Exploration techniques">
@@ -115,6 +118,12 @@ export default function ExploreStep(props: ExploreStepProps) {
       {error && (
         <div className="form-error-panel" role="alert">
           <p className="form-error">{error}</p>
+        </div>
+      )}
+
+      {notice && (
+        <div className="notice-panel" role="status">
+          <p>{notice}</p>
         </div>
       )}
 
@@ -267,7 +276,7 @@ export default function ExploreStep(props: ExploreStepProps) {
         </div>
       )}
 
-      {!round && !generating && (
+      {!round && !generating && !notice && (
         <div className="notice-panel" role="status">
           <p>
             Nothing is generated or checked until you pick a technique and ask for ideas. The

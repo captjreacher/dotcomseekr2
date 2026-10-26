@@ -1,0 +1,940 @@
+{
+  "generatedAt": "2026-10-26T05:50:34.625Z",
+  "endpoint": "https://dotcomseekr-discovery-trial.mike-f16.workers.dev",
+  "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+  "summary": {
+    "requests": 20,
+    "providerTurns": 18,
+    "successfulTurns": 17,
+    "emptyRounds": 1,
+    "failedTurns": 2,
+    "acceptedSuggestions": 66,
+    "rejectedCandidates": 10,
+    "lexicalCalls": 59,
+    "lexicalCacheHits": 2,
+    "previousFailures": [
+      "drane",
+      "grane",
+      "krane",
+      "blueflorit",
+      "herswift",
+      "uncommonground"
+    ],
+    "forbiddenHits": []
+  },
+  "cases": [
+    {
+      "id": "swift-fast",
+      "mode": "word",
+      "technique": "synonyms",
+      "ambiguity": "swift can mean a bird, a current, or fast movement; speed is chosen.",
+      "input": {
+        "original": "swift",
+        "meaning": "moving or happening quickly",
+        "commentary": "A same-day logistics service for small shops. The meaning is speed, not the bird."
+      },
+      "turnId": "af15c536-6115-45af-bc8c-e0ab93b99b92",
+      "httpStatus": 200,
+      "elapsedMs": 5268,
+      "providerCalls": 1,
+      "acceptedCount": 5,
+      "rejectedCount": 0,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": null,
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "fast",
+          "reason": "fast means moving or happening quickly"
+        },
+        {
+          "spelling": "rapid",
+          "reason": "rapid means moving or happening quickly"
+        },
+        {
+          "spelling": "quick",
+          "reason": "quick means moving or happening quickly"
+        },
+        {
+          "spelling": "speedy",
+          "reason": "speedy means moving or happening quickly"
+        },
+        {
+          "spelling": "brisk",
+          "reason": "brisk means moving or happening quickly"
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "id": "swift-fast",
+      "mode": "word",
+      "technique": "rhymes",
+      "ambiguity": "swift can mean a bird, a current, or fast movement; speed is chosen.",
+      "input": {
+        "original": "swift",
+        "meaning": "moving or happening quickly",
+        "commentary": "A same-day logistics service for small shops. The meaning is speed, not the bird."
+      },
+      "turnId": "94757d42-916a-4e16-ac43-2e91632eb28f",
+      "httpStatus": 200,
+      "elapsedMs": 5993,
+      "providerCalls": 1,
+      "acceptedCount": 5,
+      "rejectedCount": 0,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": {
+        "status": "ok",
+        "source": "Wiktionary (Wikimedia Foundation)",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://en.wiktionary.org/wiki/Wiktionary:Copyrights",
+        "verified": true,
+        "calls": 5,
+        "cacheHits": 0,
+        "latencyMs": 1771,
+        "costUsd": 0
+      },
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "lift",
+          "reason": "rhymes with swift and implies moving quickly"
+        },
+        {
+          "spelling": "shift",
+          "reason": "rhymes with swift and suggests changing quickly"
+        },
+        {
+          "spelling": "drift",
+          "reason": "rhymes with swift and implies moving quickly without control"
+        },
+        {
+          "spelling": "gift",
+          "reason": "rhymes with swift and could imply a quick delivery"
+        },
+        {
+          "spelling": "thrift",
+          "reason": "rhymes with swift and suggests being quick and efficient"
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "id": "swift-fast",
+      "mode": "word",
+      "technique": "affixes",
+      "ambiguity": "swift can mean a bird, a current, or fast movement; speed is chosen.",
+      "input": {
+        "original": "swift",
+        "meaning": "moving or happening quickly",
+        "commentary": "A same-day logistics service for small shops. The meaning is speed, not the bird."
+      },
+      "turnId": "d639051b-6956-449a-9e1b-f81c17b4686d",
+      "httpStatus": 200,
+      "elapsedMs": 6781,
+      "providerCalls": 1,
+      "acceptedCount": 3,
+      "rejectedCount": 2,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": {
+        "status": "ok",
+        "source": "Wiktionary (Wikimedia Foundation)",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://en.wiktionary.org/wiki/Wiktionary:Copyrights",
+        "verified": true,
+        "calls": 10,
+        "cacheHits": 0,
+        "latencyMs": 1619,
+        "costUsd": 0
+      },
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "speedswift",
+          "reason": "adds a word that reinforces the idea of quickness"
+        },
+        {
+          "spelling": "swiftly",
+          "reason": "adds an adverbial suffix that suggests doing something quickly"
+        },
+        {
+          "spelling": "ultraswift",
+          "reason": "adds a prefix that means beyond or exceeding, implying extremely fast"
+        }
+      ],
+      "rejected": [
+        {
+          "value": "swiftier",
+          "reason": "That grammatical ending is only allowed when it forms a real word."
+        },
+        {
+          "value": "quickspeedswift",
+          "reason": "That affix is not a recognised word or a familiar brand affix."
+        }
+      ]
+    },
+    {
+      "id": "swift-fast",
+      "mode": "word",
+      "technique": "possessives",
+      "ambiguity": "swift can mean a bird, a current, or fast movement; speed is chosen.",
+      "input": {
+        "original": "swift",
+        "meaning": "moving or happening quickly",
+        "commentary": "A same-day logistics service for small shops. The meaning is speed, not the bird."
+      },
+      "turnId": "55d06ec2-ee42-43fa-a84e-9270c12ff9e3",
+      "httpStatus": 200,
+      "elapsedMs": 4704,
+      "providerCalls": 1,
+      "acceptedCount": 3,
+      "rejectedCount": 1,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": null,
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "ourswift",
+          "reason": "adds a possessive to convey a sense of ownership and alignment with the brand's purpose"
+        },
+        {
+          "spelling": "myswift",
+          "reason": "adds a possessive to create a personal connection with the brand's swift service"
+        },
+        {
+          "spelling": "theirswift",
+          "reason": "uses a possessive to imply the service is provided for or by them, emphasizing the brand's role"
+        }
+      ],
+      "rejected": [
+        {
+          "value": "yourspeed",
+          "reason": "Must be a possessive form placed before the working name."
+        }
+      ]
+    },
+    {
+      "id": "swift-fast",
+      "mode": "word",
+      "technique": "hyphens",
+      "ambiguity": "swift can mean a bird, a current, or fast movement; speed is chosen.",
+      "input": {
+        "original": "swift",
+        "meaning": "moving or happening quickly",
+        "commentary": "A same-day logistics service for small shops. The meaning is speed, not the bird."
+      },
+      "turnId": "73306ffb-e90d-4770-9c15-510fec8ac85b",
+      "httpStatus": 400,
+      "elapsedMs": 17,
+      "providerCalls": 0,
+      "acceptedCount": 0,
+      "rejectedCount": 0,
+      "error": "Hyphens need a multi-word name. A single word has no word boundary to hyphenate.",
+      "code": "technique_unavailable",
+      "noResults": null,
+      "lexical": null,
+      "model": null,
+      "variations": [],
+      "rejected": []
+    },
+    {
+      "id": "crane-machine",
+      "mode": "word",
+      "technique": "synonyms",
+      "ambiguity": "crane can mean a bird, to stretch the neck, or lifting machinery.",
+      "input": {
+        "original": "crane",
+        "meaning": "a tall machine that lifts and moves heavy loads",
+        "commentary": "Industrial equipment rental for construction teams. The meaning is the machine."
+      },
+      "turnId": "b4ecd554-0402-40eb-87d6-cb63ef9eb742",
+      "httpStatus": 200,
+      "elapsedMs": 6162,
+      "providerCalls": 1,
+      "acceptedCount": 5,
+      "rejectedCount": 0,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": null,
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "hoist",
+          "reason": "a device used to lift heavy loads, fitting the selected meaning of a tall machine for industrial equipment rental"
+        },
+        {
+          "spelling": "gantry",
+          "reason": "a type of overhead crane, matching the selected meaning of a machine for lifting and moving heavy loads in construction"
+        },
+        {
+          "spelling": "winch",
+          "reason": "a machine used to lift or move heavy loads, aligning with the selected meaning for industrial equipment rental"
+        },
+        {
+          "spelling": "derrick",
+          "reason": "a type of crane used for lifting heavy loads, fitting the brand commentary of construction equipment"
+        },
+        {
+          "spelling": "lift",
+          "reason": "a general term for a machine that lifts heavy loads, suiting the selected meaning of a tall machine for construction teams"
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "id": "crane-machine",
+      "mode": "word",
+      "technique": "rhymes",
+      "ambiguity": "crane can mean a bird, to stretch the neck, or lifting machinery.",
+      "input": {
+        "original": "crane",
+        "meaning": "a tall machine that lifts and moves heavy loads",
+        "commentary": "Industrial equipment rental for construction teams. The meaning is the machine."
+      },
+      "turnId": "7eae3d1d-d83a-44c0-8677-ec3f1b69455c",
+      "httpStatus": 200,
+      "elapsedMs": 11001,
+      "providerCalls": 1,
+      "acceptedCount": 5,
+      "rejectedCount": 0,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": {
+        "status": "ok",
+        "source": "Wiktionary (Wikimedia Foundation)",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://en.wiktionary.org/wiki/Wiktionary:Copyrights",
+        "verified": true,
+        "calls": 5,
+        "cacheHits": 0,
+        "latencyMs": 5857,
+        "costUsd": 0
+      },
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "train",
+          "reason": "rhymes with crane, fitting the industrial equipment context"
+        },
+        {
+          "spelling": "drain",
+          "reason": "rhymes with crane, could relate to construction site water management"
+        },
+        {
+          "spelling": "strain",
+          "reason": "rhymes with crane, implies heavy lifting and moving"
+        },
+        {
+          "spelling": "gain",
+          "reason": "rhymes with crane, suggests benefit from using the equipment"
+        },
+        {
+          "spelling": "chain",
+          "reason": "rhymes with crane, relates to lifting and moving heavy loads"
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "id": "crane-machine",
+      "mode": "word",
+      "technique": "affixes",
+      "ambiguity": "crane can mean a bird, to stretch the neck, or lifting machinery.",
+      "input": {
+        "original": "crane",
+        "meaning": "a tall machine that lifts and moves heavy loads",
+        "commentary": "Industrial equipment rental for construction teams. The meaning is the machine."
+      },
+      "turnId": "835c32ea-1755-44f0-855e-7e0ae9781884",
+      "httpStatus": 200,
+      "elapsedMs": 5818,
+      "providerCalls": 1,
+      "acceptedCount": 5,
+      "rejectedCount": 0,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": {
+        "status": "ok",
+        "source": "Wiktionary (Wikimedia Foundation)",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://en.wiktionary.org/wiki/Wiktionary:Copyrights",
+        "verified": true,
+        "calls": 9,
+        "cacheHits": 1,
+        "latencyMs": 1596,
+        "costUsd": 0
+      },
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "cranelift",
+          "reason": "adds a suffix that relates to the machine's function"
+        },
+        {
+          "spelling": "craneplus",
+          "reason": "adds a suffix that implies additional value or features"
+        },
+        {
+          "spelling": "cranepro",
+          "reason": "adds a suffix that suggests professional grade equipment"
+        },
+        {
+          "spelling": "industrialscrane",
+          "reason": "adds a prefix that relates to the industry the machine is used in"
+        },
+        {
+          "spelling": "cranemax",
+          "reason": "adds a suffix that implies maximum capacity or performance"
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "id": "crane-machine",
+      "mode": "word",
+      "technique": "possessives",
+      "ambiguity": "crane can mean a bird, to stretch the neck, or lifting machinery.",
+      "input": {
+        "original": "crane",
+        "meaning": "a tall machine that lifts and moves heavy loads",
+        "commentary": "Industrial equipment rental for construction teams. The meaning is the machine."
+      },
+      "turnId": "e3868d34-ffb3-4a5b-9932-e59490daa965",
+      "httpStatus": 200,
+      "elapsedMs": 4267,
+      "providerCalls": 1,
+      "acceptedCount": 4,
+      "rejectedCount": 0,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": null,
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "ourcrane",
+          "reason": "indicates the crane is owned or provided by the company for rental"
+        },
+        {
+          "spelling": "yourcrane",
+          "reason": "suggests the crane is available for the customer's use"
+        },
+        {
+          "spelling": "mycrane",
+          "reason": "implies a personal or company-owned crane for rental purposes"
+        },
+        {
+          "spelling": "theircrane",
+          "reason": "refers to the crane as belonging to the construction teams or the company"
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "id": "crane-machine",
+      "mode": "word",
+      "technique": "hyphens",
+      "ambiguity": "crane can mean a bird, to stretch the neck, or lifting machinery.",
+      "input": {
+        "original": "crane",
+        "meaning": "a tall machine that lifts and moves heavy loads",
+        "commentary": "Industrial equipment rental for construction teams. The meaning is the machine."
+      },
+      "turnId": "71a3c5f3-7f4d-4c14-b216-49a1422e232f",
+      "httpStatus": 400,
+      "elapsedMs": 15,
+      "providerCalls": 0,
+      "acceptedCount": 0,
+      "rejectedCount": 0,
+      "error": "Hyphens need a multi-word name. A single word has no word boundary to hyphenate.",
+      "code": "technique_unavailable",
+      "noResults": null,
+      "lexical": null,
+      "model": null,
+      "variations": [],
+      "rejected": []
+    },
+    {
+      "id": "blue-orbit",
+      "mode": "phrase",
+      "technique": "synonyms",
+      "ambiguity": "blue can be a colour or sadness; orbit can be literal or a working rhythm.",
+      "input": {
+        "original": "blue orbit",
+        "meaning": "a calm, repeating path around a shared goal",
+        "commentary": "A planning tool for teams that want steady progress without frantic urgency."
+      },
+      "turnId": "e798a863-a6db-4768-9a70-267536b2eb0b",
+      "httpStatus": 200,
+      "elapsedMs": 6218,
+      "providerCalls": 1,
+      "acceptedCount": 5,
+      "rejectedCount": 0,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": null,
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "bluecircle",
+          "reason": "Circle implies a calm, repeating path, fitting the selected meaning of steady progress around a shared goal.",
+          "changedWord": "orbit"
+        },
+        {
+          "spelling": "blueroute",
+          "reason": "Route suggests a planned path, aligning with the brand commentary of a planning tool for teams.",
+          "changedWord": "orbit"
+        },
+        {
+          "spelling": "bluepath",
+          "reason": "Path conveys a sense of direction and progression, fitting the selected meaning of a calm, repeating path around a shared goal.",
+          "changedWord": "orbit"
+        },
+        {
+          "spelling": "bluetrack",
+          "reason": "Track implies a guided, steady progression, aligning with the brand commentary of steady progress without frantic urgency.",
+          "changedWord": "orbit"
+        },
+        {
+          "spelling": "bluecycle",
+          "reason": "Cycle suggests a repeating pattern, fitting the selected meaning of a calm, repeating path around a shared goal.",
+          "changedWord": "orbit"
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "id": "blue-orbit",
+      "mode": "phrase",
+      "technique": "rhymes",
+      "ambiguity": "blue can be a colour or sadness; orbit can be literal or a working rhythm.",
+      "input": {
+        "original": "blue orbit",
+        "meaning": "a calm, repeating path around a shared goal",
+        "commentary": "A planning tool for teams that want steady progress without frantic urgency."
+      },
+      "turnId": "1372e58e-ca34-40fe-a624-9d3fcead45c8",
+      "httpStatus": 200,
+      "elapsedMs": 5810,
+      "providerCalls": 1,
+      "acceptedCount": 2,
+      "rejectedCount": 3,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": {
+        "status": "ok",
+        "source": "Wiktionary (Wikimedia Foundation)",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://en.wiktionary.org/wiki/Wiktionary:Copyrights",
+        "verified": true,
+        "calls": 5,
+        "cacheHits": 0,
+        "latencyMs": 1283,
+        "costUsd": 0
+      },
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "bluemerit",
+          "reason": "merit rhymes with orbit",
+          "changedWord": "orbit"
+        },
+        {
+          "spelling": "bluespirit",
+          "reason": "spirit rhymes with orbit",
+          "changedWord": "orbit"
+        }
+      ],
+      "rejected": [
+        {
+          "value": "blueflorit",
+          "reason": "“florit” is not a recognised English word."
+        },
+        {
+          "value": "blueparit",
+          "reason": "“parit” is not a recognised English word."
+        },
+        {
+          "value": "bluenorit",
+          "reason": "“norit” is not a recognised English word."
+        }
+      ]
+    },
+    {
+      "id": "blue-orbit",
+      "mode": "phrase",
+      "technique": "affixes",
+      "ambiguity": "blue can be a colour or sadness; orbit can be literal or a working rhythm.",
+      "input": {
+        "original": "blue orbit",
+        "meaning": "a calm, repeating path around a shared goal",
+        "commentary": "A planning tool for teams that want steady progress without frantic urgency."
+      },
+      "turnId": "a66dc612-9abb-4668-acc3-0e84a68d2130",
+      "httpStatus": 200,
+      "elapsedMs": 7488,
+      "providerCalls": 1,
+      "acceptedCount": 4,
+      "rejectedCount": 1,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": {
+        "status": "ok",
+        "source": "Wiktionary (Wikimedia Foundation)",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://en.wiktionary.org/wiki/Wiktionary:Copyrights",
+        "verified": true,
+        "calls": 11,
+        "cacheHits": 1,
+        "latencyMs": 1289,
+        "costUsd": 0
+      },
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "blueproorbit",
+          "reason": "adds a professional suffix to the working name, fitting the brand commentary of a planning tool for teams",
+          "changedWord": "orbit"
+        },
+        {
+          "spelling": "blueorbitpro",
+          "reason": "adds a professional suffix to the working name, fitting the brand commentary of a planning tool for teams",
+          "changedWord": "orbit"
+        },
+        {
+          "spelling": "coreblueorbit",
+          "reason": "adds a core prefix to the working name, suggesting a central and shared goal",
+          "changedWord": "blue"
+        },
+        {
+          "spelling": "blueorbitcore",
+          "reason": "adds a core suffix to the working name, suggesting a central and shared goal",
+          "changedWord": "orbit"
+        }
+      ],
+      "rejected": [
+        {
+          "value": "bluemetrobit",
+          "reason": "Must be one word of the working name with a readable prefix or suffix."
+        }
+      ]
+    },
+    {
+      "id": "blue-orbit",
+      "mode": "phrase",
+      "technique": "possessives",
+      "ambiguity": "blue can be a colour or sadness; orbit can be literal or a working rhythm.",
+      "input": {
+        "original": "blue orbit",
+        "meaning": "a calm, repeating path around a shared goal",
+        "commentary": "A planning tool for teams that want steady progress without frantic urgency."
+      },
+      "turnId": "cc44c66b-8b32-4dac-88df-8a123cfc4317",
+      "httpStatus": 200,
+      "elapsedMs": 4609,
+      "providerCalls": 1,
+      "acceptedCount": 4,
+      "rejectedCount": 0,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": null,
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "ourblueorbit",
+          "reason": "Adds a sense of shared ownership, fitting the brand commentary about teams and shared goals"
+        },
+        {
+          "spelling": "myblueorbit",
+          "reason": "Conveys personal investment in a calm and repeating path, aligning with the selected meaning"
+        },
+        {
+          "spelling": "yourblueorbit",
+          "reason": "Directly addresses the user, implying the orbit is theirs to manage and control, fitting the planning tool aspect"
+        },
+        {
+          "spelling": "theirblueorbit",
+          "reason": "Suggests a path that belongs to them, potentially a team or organization, using the tool for steady progress"
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "id": "blue-orbit",
+      "mode": "phrase",
+      "technique": "hyphens",
+      "ambiguity": "blue can be a colour or sadness; orbit can be literal or a working rhythm.",
+      "input": {
+        "original": "blue orbit",
+        "meaning": "a calm, repeating path around a shared goal",
+        "commentary": "A planning tool for teams that want steady progress without frantic urgency."
+      },
+      "turnId": "5ac93d31-758a-4732-92ba-8aced0ea9247",
+      "httpStatus": 200,
+      "elapsedMs": 1363,
+      "providerCalls": 1,
+      "acceptedCount": 1,
+      "rejectedCount": 0,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": null,
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "blue-orbit",
+          "reason": "removes the space to create a valid domain name"
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "id": "common-ground",
+      "mode": "phrase",
+      "technique": "synonyms",
+      "ambiguity": "ground can be soil, a reason, or an area of agreement.",
+      "input": {
+        "original": "common ground",
+        "meaning": "shared agreement between people who disagree",
+        "commentary": "A mediation service for neighbours in disputes. Ground is figurative agreement, not soil."
+      },
+      "turnId": "60064ced-c003-4915-a605-3f632a95dc90",
+      "httpStatus": 200,
+      "elapsedMs": 8364,
+      "providerCalls": 1,
+      "acceptedCount": 4,
+      "rejectedCount": 1,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": null,
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "commonaccord",
+          "reason": "uses 'accord' as a synonym for 'agreement', fitting the selected meaning of shared agreement between people who disagree",
+          "changedWord": "ground"
+        },
+        {
+          "spelling": "mutualground",
+          "reason": "uses 'mutual' as a synonym for 'common', fitting the selected meaning of shared agreement between people who disagree",
+          "changedWord": "common"
+        },
+        {
+          "spelling": "commonconsensus",
+          "reason": "uses 'consensus' as a synonym for 'agreement', fitting the selected meaning of shared agreement between people who disagree",
+          "changedWord": "ground"
+        },
+        {
+          "spelling": "jointground",
+          "reason": "uses 'joint' as a synonym for 'common' or 'shared', fitting the selected meaning of shared agreement between people who disagree",
+          "changedWord": "common"
+        }
+      ],
+      "rejected": [
+        {
+          "value": "commonground",
+          "reason": "Reason is too long."
+        }
+      ]
+    },
+    {
+      "id": "common-ground",
+      "mode": "phrase",
+      "technique": "rhymes",
+      "ambiguity": "ground can be soil, a reason, or an area of agreement.",
+      "input": {
+        "original": "common ground",
+        "meaning": "shared agreement between people who disagree",
+        "commentary": "A mediation service for neighbours in disputes. Ground is figurative agreement, not soil."
+      },
+      "turnId": "b572d684-ea1a-4ec6-ab23-8f01f35fb89d",
+      "httpStatus": 200,
+      "elapsedMs": 12196,
+      "providerCalls": 1,
+      "acceptedCount": 4,
+      "rejectedCount": 1,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": {
+        "status": "ok",
+        "source": "Wiktionary (Wikimedia Foundation)",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://en.wiktionary.org/wiki/Wiktionary:Copyrights",
+        "verified": true,
+        "calls": 5,
+        "cacheHits": 0,
+        "latencyMs": 6076,
+        "costUsd": 0
+      },
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "commonround",
+          "reason": "round rhymes with ground, fitting the shared agreement meaning",
+          "changedWord": "ground"
+        },
+        {
+          "spelling": "commonmound",
+          "reason": "mound rhymes with ground, fitting the shared agreement meaning",
+          "changedWord": "ground"
+        },
+        {
+          "spelling": "commonfound",
+          "reason": "found rhymes with ground, fitting the shared agreement meaning",
+          "changedWord": "ground"
+        },
+        {
+          "spelling": "commonwound",
+          "reason": "wound rhymes with ground, but has a very negative connotation that does not fit the brand commentary",
+          "changedWord": "ground"
+        }
+      ],
+      "rejected": [
+        {
+          "value": "commonhround",
+          "reason": "“hround” is not a recognised English word."
+        }
+      ]
+    },
+    {
+      "id": "common-ground",
+      "mode": "phrase",
+      "technique": "affixes",
+      "ambiguity": "ground can be soil, a reason, or an area of agreement.",
+      "input": {
+        "original": "common ground",
+        "meaning": "shared agreement between people who disagree",
+        "commentary": "A mediation service for neighbours in disputes. Ground is figurative agreement, not soil."
+      },
+      "turnId": "643b0280-b73f-4b63-acf2-e609144f299a",
+      "httpStatus": 200,
+      "elapsedMs": 5548,
+      "providerCalls": 1,
+      "acceptedCount": 3,
+      "rejectedCount": 1,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": {
+        "status": "ok",
+        "source": "Wiktionary (Wikimedia Foundation)",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://en.wiktionary.org/wiki/Wiktionary:Copyrights",
+        "verified": true,
+        "calls": 9,
+        "cacheHits": 0,
+        "latencyMs": 1157,
+        "costUsd": 0
+      },
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "commonfairground",
+          "reason": "Adds a suffix to ground, implying a just and reasonable area of agreement",
+          "changedWord": "ground"
+        },
+        {
+          "spelling": "publiccommonground",
+          "reason": "Adds a prefix to the whole phrase, suggesting the service is open to all",
+          "changedWord": "common"
+        },
+        {
+          "spelling": "commonmiddleground",
+          "reason": "Adds a prefix to ground, implying a neutral area of agreement",
+          "changedWord": "ground"
+        }
+      ],
+      "rejected": [
+        {
+          "value": "commonground",
+          "reason": "That is the working name itself."
+        }
+      ]
+    },
+    {
+      "id": "common-ground",
+      "mode": "phrase",
+      "technique": "possessives",
+      "ambiguity": "ground can be soil, a reason, or an area of agreement.",
+      "input": {
+        "original": "common ground",
+        "meaning": "shared agreement between people who disagree",
+        "commentary": "A mediation service for neighbours in disputes. Ground is figurative agreement, not soil."
+      },
+      "turnId": "ceacf5af-c0d0-45ee-ab9f-3556c2a77dca",
+      "httpStatus": 200,
+      "elapsedMs": 4476,
+      "providerCalls": 1,
+      "acceptedCount": 4,
+      "rejectedCount": 0,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": null,
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "ourcommonground",
+          "reason": "Adding a possessive to imply shared ownership of the common ground, fitting for a mediation service"
+        },
+        {
+          "spelling": "yourcommonground",
+          "reason": "Using a possessive to directly address the users of the mediation service, making it personal"
+        },
+        {
+          "spelling": "mycommonground",
+          "reason": "Creating a sense of personal investment in finding common ground, suitable for a service that aims to resolve disputes"
+        },
+        {
+          "spelling": "theircommonground",
+          "reason": "Implying a neutral, third-party perspective in finding common ground among disputing parties"
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "id": "common-ground",
+      "mode": "phrase",
+      "technique": "hyphens",
+      "ambiguity": "ground can be soil, a reason, or an area of agreement.",
+      "input": {
+        "original": "common ground",
+        "meaning": "shared agreement between people who disagree",
+        "commentary": "A mediation service for neighbours in disputes. Ground is figurative agreement, not soil."
+      },
+      "turnId": "979ece56-4c17-4520-b6d0-e8d8fa09b319",
+      "httpStatus": 200,
+      "elapsedMs": 794,
+      "providerCalls": 1,
+      "acceptedCount": 0,
+      "rejectedCount": 0,
+      "error": null,
+      "code": null,
+      "noResults": {
+        "reason": "empty_model_response",
+        "message": "The model returned no suggestions for this round. Try again, refine the meaning and commentary, or choose another technique."
+      },
+      "lexical": null,
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [],
+      "rejected": []
+    }
+  ]
+}
