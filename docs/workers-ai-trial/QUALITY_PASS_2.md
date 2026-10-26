@@ -1,7 +1,8 @@
 # Workers AI trial — pass 2: technique boundaries and hosted tester frontend
 
-Date: **2026-10-26**. Draft PR: **#7** (`trial/workers-ai-guided-discovery`), based on
-**#6** (`feat/guided-discovery`). Production is unchanged; nothing was merged.
+Date: **2026-10-26** (allowance re-check at **21:42 UTC**). Draft PR: **#7**
+(`trial/workers-ai-guided-discovery`), based on **#6** (`feat/guided-discovery`).
+Production is unchanged; nothing was merged.
 
 This report supersedes the technique rules in the pass-1 findings
 ([`../WORKERS_AI_TRIAL.md`](../WORKERS_AI_TRIAL.md)). Pass-1 measurements and quality
@@ -107,11 +108,49 @@ shared daily naming turns before this deployment. The caps were not raised.
 
 ## 4. Quality findings
 
+### Allowance check before the matrix (2026-10-26 21:42 UTC)
+
+A fresh check of the deployed Worker and D1 was made before starting the 10-turn
+pass:
+
+| Check                           | Value                                              |
+| ------------------------------- | -------------------------------------------------- |
+| Health source SHA               | `a38d7d50fb14483a0591bb0cb3542b00a3de7f17`         |
+| Deployment                      | `trial-20261026T090120Z-a38d7d5`                   |
+| Prompt / validator / technique  | `2026-10-26.2` / `2026-10-26.3` / `2026-10-26.2`    |
+| Shared daily naming turns       | **80 / 80**                                        |
+| Shared daily provider calls     | 80 / 100                                           |
+| Overall naming turns            | 80 / 150                                           |
+| Overall provider calls          | 80 / 250                                           |
+| Overall tokens                  | 41,832 / 400,000                                   |
+| Matrix turns started            | **0**                                              |
+
+The daily cap resets at 00:00 UTC, about 2h18m after this check. Because the daily
+turn allowance was zero, the 10-turn matrix was **not started**. The existing limit
+check refuses at HTTP 429 before any provider call and adds no row; starting now
+would only reproduce that refusal. No caps were changed, no provider calls were
+made, and no D1 rows were added. The cumulative totals below therefore still contain
+the earlier 80 turns only.
+
+The planned post-reset pass is two ambiguous cases (`crane-machine` and
+`common-ground`) across five techniques. It uses at most 10 turns and would leave at
+least 70/80 daily turns and 60/150 overall turns for Mike, subject to the unchanged
+caps. Single-word hyphen requests are refused before the provider, so fewer than 10
+provider calls are expected.
+
+Hosted URL re-check at the same time: `/login` returned 200, `/` returned 302 to
+`/login?next=%2F`, gated `/discover?mode=word` returned 302, a valid code posted to
+`/__auth` returned 303 to the gated route, and the gated route then returned 200
+HTML. The code was read from the gitignored `.trial/access-keys.local.txt`; it was not
+printed, placed in a URL or logged, and the temporary cookie jar was removed.
+
 ### Pass-2 live quality: not measured
 
-The fresh matrix could not start because the shared daily **turn** allowance was
-exhausted (80/80). Reporting a pass-2 relevance score from the pass-1 outputs would
-mix archived and current data, so this report makes no live pass-2 quality claim.
+The matrix was not run because the fresh allowance check above found zero daily
+turns. Reporting a pass-2 relevance score from the pass-1 outputs would mix archived
+and current data, so this report makes no live pass-2 quality claim. There are also
+no pass-2 live empty-round observations; the empty-round contract is covered by
+fixtures, not by live model output.
 
 The reproducible runner is `workers/discovery-trial/scripts/trial-matrix.mjs`. Use
 `TRIAL_MATRIX_CASES=crane-machine,common-ground` for a 10-turn pass (one ambiguous
@@ -183,7 +222,8 @@ pass-1 observation, not a pass-2 live result.
 | Lexical-service cost                  |                        $0.00 (Wikimedia API) |
 
 These rows predate the pass-2 prompt. They are useful for the trial's actual spend and
-for the remaining-allowance arithmetic, not as a pass-2 per-turn estimate.
+for the remaining-allowance arithmetic, not as a pass-2 per-turn estimate. The fresh
+allowance check created no pass-2 rows.
 
 ### Remaining allowance
 
@@ -246,7 +286,8 @@ release production.
 
 Not run:
 
-- A pass-2 live quality matrix: blocked by 80/80 daily turns; caps unchanged.
+- A pass-2 live quality matrix: not started because the 2026-10-26 21:42 UTC check
+  found 80/80 daily turns; caps unchanged and no provider calls made.
 - A pass-2 live empty-round UI click: same block. The response contract and UI notice
   are covered by tests.
 - Deno typecheck or deployment of the Supabase function: Deno is not installed; the
