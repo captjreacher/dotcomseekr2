@@ -174,6 +174,7 @@ describe('technique boundaries', () => {
           'hire',
           'works',
           'pro',
+          'cranelift',
           'lift',
           'plus',
           'max',

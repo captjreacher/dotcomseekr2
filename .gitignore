@@ -40,6 +40,7 @@ Thumbs.db
 .turbo
 .cache
 .freebuff/
+.wrangler/
 
 # Local trial access codes / hashes (never commit)
 .trial/

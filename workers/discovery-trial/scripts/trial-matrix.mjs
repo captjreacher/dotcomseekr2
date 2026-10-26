@@ -58,7 +58,7 @@ function readKey() {
   return line.slice(line.indexOf('=') + 1).trim();
 }
 
-const cases = [
+const allCases = [
   {
     id: 'swift-fast',
     mode: 'word',
@@ -96,6 +96,18 @@ const cases = [
 
 const techniques = ['synonyms', 'rhymes', 'affixes', 'possessives', 'hyphens'];
 const previousFailures = ['drane', 'grane', 'krane', 'blueflorit', 'herswift', 'uncommonground'];
+const requestedCases = (process.env.TRIAL_MATRIX_CASES ?? '')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
+const cases = requestedCases.length
+  ? allCases.filter((item) => requestedCases.includes(item.id))
+  : allCases;
+
+if (cases.length === 0) {
+  throw new Error(`No matching cases for TRIAL_MATRIX_CASES=${requestedCases.join(',')}`);
+}
+
 const key = readKey();
 const health = await readHealth();
 const sourceSha = gitValue(['rev-parse', 'HEAD']);
@@ -202,6 +214,7 @@ const output = {
   generatedAt: new Date().toISOString(),
   endpoint,
   archive: false,
+  caseIds: cases.map((item) => item.id),
   sourceSha: sourceSha || 'unknown',
   sourceDirty,
   deployedSourceSha,

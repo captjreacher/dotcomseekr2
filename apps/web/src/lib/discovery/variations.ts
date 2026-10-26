@@ -576,17 +576,9 @@ function affixReason(
   const parts = affixParts(slot, anchor);
   if (!parts) return null;
 
-  // A whole recognised word is acceptable even if it contains a negating piece
-  // ("uncommon" is a word). For a phrase, the whole joined spelling is checked
-  // first so a recognised modified word cannot smuggle in a negating affix.
-  if (context.recognised?.has(fullSpelling)) return null;
-
-  if (isNegatingAffix(parts)) {
-    return 'That prefix or suffix negates the working name instead of extending it.';
-  }
-
-  if (context.recognised?.has(slot)) return null;
-
+  // A separate recognised word is a compound, not an affix, even when the
+  // compound itself happens to have a dictionary entry. This check comes first
+  // so "cranelift" cannot pass merely because a source lists the compound.
   const isAffix = LINGUISTIC_AFFIXES.has(parts.part);
   if (!isAffix) {
     if (context.recognised?.has(parts.part)) {
@@ -597,6 +589,17 @@ function affixReason(
       ? 'That fragment is too short to read as a prefix or suffix.'
       : 'That is not a recognised linguistic prefix or suffix.';
   }
+
+  // A whole recognised word is acceptable even if it contains a negating piece
+  // ("uncommon" is a word). The piece itself must still be a bound affix, so a
+  // recognised compound of two words cannot use this exception.
+  if (context.recognised?.has(fullSpelling)) return null;
+
+  if (isNegatingAffix(parts)) {
+    return 'That prefix or suffix negates the working name instead of extending it.';
+  }
+
+  if (context.recognised?.has(slot)) return null;
 
   if (parts.side === 'suffix' && GRAMMATICAL_SUFFIXES.has(parts.part)) {
     if (context.recognised && !context.recognised.has(slot)) {
