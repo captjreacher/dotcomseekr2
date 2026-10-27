@@ -5,6 +5,7 @@ import {
   BANNED_CLAIM_LABELS,
   TECHNIQUE_DESCRIPTIONS,
   TECHNIQUE_LABELS,
+  TECHNIQUE_RULES,
   techniqueAvailable,
 } from './techniques.ts';
 import {
@@ -558,6 +559,14 @@ describe('lexical term extraction', () => {
     assert.match(noResultsMessage('rhymes'), /recognised English rhyme/i);
     assert.match(noResultsMessage('affixes'), /linguistic prefix or suffix/i);
     assert.match(noResultsMessage('affixes'), /last word/i);
+  });
+});
+
+describe('affix guidance', () => {
+  it('keeps productive -like and naturalness warnings in the affix rules', () => {
+    assert.match(TECHNIQUE_RULES.affixes, /-like/);
+    assert.match(TECHNIQUE_RULES.affixes, /different literal word/i);
+    assert.match(TECHNIQUE_RULES.affixes, /unclear verb/i);
   });
 });
 
