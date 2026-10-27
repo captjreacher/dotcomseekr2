@@ -43,7 +43,7 @@ export const TECHNIQUE_RULES: Record<Technique, string> = {
   rhymes:
     'Every suggestion must be a recognised English word that rhymes in sound, not spelling, with a word of the working name: "green" and "machine" rhyme with "clean". Never invent a spelling, use an obsolete form, or offer a lookalike that sounds different. If a rhyme only fits a different sense of the meaning, do not offer it.',
   affixes:
-    'Every suggestion must add a bound linguistic prefix or suffix to the working name, such as re-, -able, -ness, -ish or -ify. A separate word is not an affix: cranehire, craneworks and cranepro are compounds, not affix suggestions. Reject letter stacks, grammatical endings that do not form a real word, and additions that negate the working name (un-, non-, anti-, dis-, -less). Return fewer or none when no genuine affix fits.',
+    'Every suggestion must add a bound linguistic prefix or suffix to the working name, such as re-, -able, -ness, -ish or -ify. A separate word is not an affix: cranehire, craneworks and cranepro are compounds, not affix suggestions. In a multi-word name, attach the affix only to the final word so the joined name stays readable. Reject letter stacks, grammatical endings that do not form a real word, and additions that negate the working name (un-, non-, anti-, dis-, -less). Return fewer or none when no genuine affix fits.',
   possessives:
     'Every suggestion must be one of my, your, our or their placed before the working name. His, her and its are not allowed because they read awkwardly for a brand.',
   hyphens:

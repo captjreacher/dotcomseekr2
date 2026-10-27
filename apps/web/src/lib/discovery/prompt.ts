@@ -67,7 +67,7 @@ export function buildVariationPrompt(
       );
       if (technique === 'affixes') {
         systemParts.push(
-          'Attach the prefix or suffix to exactly one word of the phrase, not to the whole phrase, and name that word in "changedWord".'
+          'Attach the prefix or suffix to the last word of the phrase only, never to an earlier word: an affixed word in the middle fuses with the next word into an unreadable compound. Name that last word in "changedWord".'
         );
       }
       systemParts.push(`"changedWord" must be exactly one of these words: ${tokens.join(', ')}.`);

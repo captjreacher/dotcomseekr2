@@ -477,6 +477,43 @@ describe('phrases without a replaced word', () => {
 
     assert.equal(result.variations[0].spelling, 'cleanledgerly');
   });
+
+  it('only attaches a phrase affix to the final word', () => {
+    const result = sanitizeVariations(
+      {
+        variations: [
+          variation('bluenessorbit', 'Adds -ness to blue.', 'blue'),
+          variation('bluereorbit', 'Adds re- to orbit.', 'orbit'),
+          variation('blueorbitness', 'Adds -ness to orbit.', 'orbit'),
+        ],
+      },
+      context('affixes', { mode: 'phrase', workingName: 'blue orbit', original: 'blue orbit' })
+    );
+
+    assert.deepEqual(
+      result.variations.map((item) => item.spelling),
+      ['bluereorbit', 'blueorbitness']
+    );
+    assert.equal(result.rejected.length, 1);
+    assert.match(result.rejected[0].reason, /last word/i);
+  });
+
+  it('rejects interior affixes that would fuse into an unreadable compound', () => {
+    const spellings = ['commonnessground', 'recommonground', 'commonifyground'];
+    const result = sanitizeVariations(
+      { variations: spellings.map((spelling) => variation(spelling, 'Adds a bound affix.', 'common')) },
+      context('affixes', {
+        mode: 'phrase',
+        workingName: 'common ground',
+        original: 'common ground',
+        recognised: new Set(['common', 'ground', 'commonness', 'recommon', 'commonify']),
+      })
+    );
+
+    assert.equal(result.variations.length, 0);
+    assert.equal(result.rejected.length, spellings.length);
+    assert.ok(result.rejected.every((item) => /last word/i.test(item.reason)));
+  });
 });
 
 describe('lexical term extraction', () => {
@@ -503,6 +540,7 @@ describe('lexical term extraction', () => {
   it('offers a clear reason for an empty round', () => {
     assert.match(noResultsMessage('rhymes'), /recognised English rhyme/i);
     assert.match(noResultsMessage('affixes'), /linguistic prefix or suffix/i);
+    assert.match(noResultsMessage('affixes'), /last word/i);
   });
 });
 

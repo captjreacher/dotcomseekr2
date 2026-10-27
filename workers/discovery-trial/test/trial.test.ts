@@ -454,6 +454,66 @@ test('affixes reject compounds built from separate words', async () => {
   );
 });
 
+test('phrase affixes attach only to the final word', async () => {
+  const lexical = new FakeLexical(['common', 'ground', 'commonness', 'recommon', 'commonify']);
+  const { env } = await makeEnv(
+    [
+      {
+        response: {
+          variations: [
+            {
+              spelling: 'commonnessground',
+              reason: 'Adds a bound suffix to common.',
+              changedWord: 'common',
+            },
+            {
+              spelling: 'recommonground',
+              reason: 'Adds a bound prefix to common.',
+              changedWord: 'common',
+            },
+            {
+              spelling: 'commonifyground',
+              reason: 'Adds a bound suffix to common.',
+              changedWord: 'common',
+            },
+            {
+              spelling: 'commongroundness',
+              reason: 'Adds a bound suffix to ground.',
+              changedWord: 'ground',
+            },
+          ],
+        },
+        usage: { prompt_tokens: 296, completion_tokens: 118, total_tokens: 414 },
+      },
+    ],
+    {}
+  );
+
+  const response = await handleRequest(
+    request(
+      variationBody({
+        technique: 'affixes',
+        mode: 'phrase',
+        workingName: 'common ground',
+        original: 'common ground',
+      })
+    ),
+    env,
+    { lexical }
+  );
+  const body = (await response.json()) as Record<string, any>;
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(
+    body.variations.map((item: { spelling: string }) => item.spelling),
+    ['commongroundness']
+  );
+  assert.equal(body.rejected.length, 3);
+  assert.ok(
+    body.rejected.every((item: { reason: string }) => /last word/i.test(item.reason))
+  );
+});
+
 test('a negating affix cannot be used to invent a longer phrase', async () => {
   const lexical = new FakeLexical(['common', 'ground', 'uncommon']);
   const { env } = await makeEnv([successPayload(['uncommonground'], 'common')], {});

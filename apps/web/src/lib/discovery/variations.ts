@@ -266,7 +266,7 @@ export function noResultsMessage(technique: Technique): string {
     case 'rhymes':
       return 'No suggestion was a recognised English rhyme for this round. A thin round is better than invented words; try another technique.';
     case 'affixes':
-      return 'No suggestion used a bound linguistic prefix or suffix that fits this brand. A separate word is not an affix; try another technique, or refine the meaning and commentary.';
+      return 'No suggestion used a bound linguistic prefix or suffix in a readable place. A separate word is not an affix, and in a phrase the affix must attach to the last word. Try another technique, or refine the meaning and commentary.';
     case 'possessives':
       return 'No possessive form read naturally for this brand. Try another technique.';
     case 'synonyms':
@@ -422,7 +422,15 @@ function techniqueReason(
         return 'Must be one word of the working name with a readable prefix or suffix.';
       }
 
-      return affixReason(slot.value, spelling, changedWord, context);
+      const affixRejection = affixReason(slot.value, spelling, changedWord, context);
+      if (affixRejection) return affixRejection;
+
+      // A derived word in the middle of a phrase is fused to the next word, so
+      // an affix on any word except the last one reads as an accidental
+      // compound. Only a final-word affix keeps the joined name parseable.
+      return changedWord === tokens[tokens.length - 1]
+        ? null
+        : 'In a phrase, attach the prefix or suffix to the last word so the joined name stays readable.';
     }
     case 'possessives': {
       const possessive = POSSESSIVE_FORMS.find((form) => spelling === `${form}${anchor}`);

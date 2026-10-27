@@ -69,7 +69,7 @@ export default function ExploreStep(props: ExploreStepProps) {
         Each round uses exactly one technique. The AI works inside your meaning and commentary, and
         returns at most five names, sometimes fewer when suitable options are scarce. Rhymes and
         affixes are checked against Wiktionary (CC BY-SA 4.0), and an affix must be a bound prefix or
-        suffix rather than an extra word.
+        suffix rather than an extra word; in a multi-word name it attaches to the final word.
       </p>
 
       <div className="technique-grid" role="group" aria-label="Exploration techniques">
