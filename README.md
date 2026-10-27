@@ -41,6 +41,10 @@ supabase secrets set DISCOVERY_MODEL=gpt-4o-mini --project-ref <ref>
 
 If the provider is unconfigured, rate limited or out of credit, the endpoint reports that state (for example `code: "ai_quota"` with the provider error code) and the UI shows the blocker. There is deliberately **no deterministic fallback generator**, because a different generator would silently change what you asked for.
 
+### Cloudflare Workers AI trial (isolated)
+
+An opt-in provider adapter in `workers/discovery-trial` can serve variations from Cloudflare Workers AI instead of OpenAI. It is separate from the production Worker and is not enabled by default. A build uses it only when `VITE_DISCOVERY_TRIAL_URL` is set; testers enter an access code in the Explore step, and the Worker enforces hashed tester codes, pseudonymous sessions, daily/overall allowances and per-attempt usage logging in D1. Rhymes and affixes are checked against Wiktionary (CC BY-SA 4.0) so invented spellings and obsolete forms are not returned; a round may return fewer than five names or none, with a clear reason. The existing OpenAI integration remains available and is never called as a silent fallback. See [docs/WORKERS_AI_TRIAL.md](docs/WORKERS_AI_TRIAL.md) for the measured trial report and [workers/discovery-trial/README.md](workers/discovery-trial/README.md) for operation.
+
 ### Deploying the guided flow
 
 ```bash

@@ -8,3 +8,4 @@ export * from '../../../apps/web/src/lib/discovery/types.ts';
 export * from '../../../apps/web/src/lib/discovery/domains.ts';
 export * from '../../../apps/web/src/lib/discovery/techniques.ts';
 export * from '../../../apps/web/src/lib/discovery/variations.ts';
+export * from '../../../apps/web/src/lib/discovery/prompt.ts';
