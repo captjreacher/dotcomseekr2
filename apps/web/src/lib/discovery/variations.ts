@@ -78,6 +78,7 @@ const LINGUISTIC_AFFIXES = new Set([
   'ive',
   'ize',
   'less',
+  'like',
   'ly',
   'ment',
   'ness',

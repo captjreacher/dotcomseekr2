@@ -454,6 +454,25 @@ test('affixes reject compounds built from separate words', async () => {
   );
 });
 
+test('a productive -like suffix is accepted', async () => {
+  const lexical = new FakeLexical(['crane', 'like']);
+  const { env } = await makeEnv([successPayload(['cranelike'], '', 'Adds the suffix -like.')], {});
+
+  const response = await handleRequest(
+    request(variationBody({ technique: 'affixes', workingName: 'crane', original: 'crane' })),
+    env,
+    { lexical }
+  );
+  const body = (await response.json()) as Record<string, any>;
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(
+    body.variations.map((item: { spelling: string }) => item.spelling),
+    ['cranelike']
+  );
+  assert.equal(body.rejected.length, 0);
+});
+
 test('phrase affixes attach only to the final word', async () => {
   const lexical = new FakeLexical(['common', 'ground', 'commonness', 'recommon', 'commonify']);
   const { env } = await makeEnv(

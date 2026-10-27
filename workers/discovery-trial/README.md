@@ -13,10 +13,11 @@ part of the production Worker and is not deployed by the normal build.
   abbreviations are not accepted. The cache is keyed by `SHA-256(term)`.
 - Technique boundaries: an affix must be a bound linguistic prefix or suffix,
   not a separate word (so `cranehire`, `craneworks` and `cranepro` are rejected in
-  affix rounds). In a multi-word name it must attach to the final word, so the
-  joined result does not fuse into an unreadable compound. Possessives stay in
-  their own round, and a rhyme must be a recognised word whose reason connects
-  it to the selected meaning.
+  affix rounds). Productive `-like` is accepted; an affix that creates a
+  different literal word or an unclear verb is discouraged. In a multi-word name
+  it must attach to the final word, so the joined result does not fuse into an
+  unreadable compound. Possessives stay in their own round, and a rhyme must be a
+  recognised word whose reason connects it to the selected meaning.
 - The hosted frontend at `https://dotcomseekr-discovery-trial-web.mike-f16.workers.dev`
   serves the wizard behind a tester gate; see `../../workers/trial-web/README.md`.
 - Empty rounds are explicit: HTTP 200 with `variations: []` and

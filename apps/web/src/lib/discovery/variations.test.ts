@@ -188,6 +188,23 @@ describe('technique boundaries', () => {
     assert.ok(result.rejected.every((item) => /separate word/i.test(item.reason)));
   });
 
+  it('accepts a productive -like suffix, not only affixes that are not words', () => {
+    const result = sanitizeVariations(
+      { variations: [variation('cranelike'), variation('cranehire')] },
+      context('affixes', {
+        workingName: 'crane',
+        original: 'crane',
+        recognised: new Set(['crane', 'like', 'hire']),
+      })
+    );
+
+    assert.deepEqual(
+      result.variations.map((item) => item.spelling),
+      ['cranelike']
+    );
+    assert.match(result.rejected[0].reason, /separate word/i);
+  });
+
   it('keeps possessives out of affix rounds', () => {
     const result = sanitizeVariations(
       { variations: [variation('mycrane'), variation('craneable')] },
