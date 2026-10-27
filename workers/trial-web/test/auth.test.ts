@@ -75,6 +75,15 @@ test('the login page never contains the access code', async () => {
   assert.equal(response.headers.get('set-cookie'), null);
 });
 
+test('the login page keeps a referrer policy that preserves the form Origin', async () => {
+  const { env } = makeEnv();
+  const response = await handleRequest(request('/login'), env);
+
+  // Chrome sends Origin: null for a same-origin form POST when the document's
+  // referrer policy is no-referrer, so the gate would reject its own login.
+  assert.equal(response.headers.get('referrer-policy'), 'same-origin');
+});
+
 test('a valid code opens the gate with a hardened cookie and safe next path', async () => {
   const { env, assets } = makeEnv();
   const response = await handleRequest(authRequest(CODE, { next: '/discover?mode=phrase' }), env);

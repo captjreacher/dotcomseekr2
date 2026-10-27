@@ -99,7 +99,9 @@ function securityHeaders(): Record<string, string> {
   return {
     'cache-control': 'no-store',
     'content-security-policy': LOGIN_CSP,
-    'referrer-policy': 'no-referrer',
+    // Keep this at same-origin. Chrome sends Origin: null for a same-origin
+    // form POST when the page uses no-referrer, which the gate then rejects.
+    'referrer-policy': 'same-origin',
     'x-content-type-options': 'nosniff',
     'x-frame-options': 'DENY',
     robots: 'noindex, nofollow',
