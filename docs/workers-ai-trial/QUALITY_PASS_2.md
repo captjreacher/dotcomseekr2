@@ -1,6 +1,6 @@
-# Workers AI trial — pass 2: technique boundaries and hosted tester frontend
+# Workers AI trial — pass 2: live matrix, technique boundaries and hosted tester frontend
 
-Date: **2026-10-26** (allowance re-check at **21:42 UTC**). Draft PR: **#7**
+Date: **2026-10-27** (matrix run after the UTC reset). Draft PR: **#7**
 (`trial/workers-ai-guided-discovery`), based on **#6** (`feat/guided-discovery`).
 Production is unchanged; nothing was merged.
 
@@ -66,202 +66,229 @@ is exposed. `/__logout` clears the gate cookie.
 | Prompt / validator / technique | `2026-10-26.2` / `2026-10-26.3` / `2026-10-26.2`                                      |
 | Pricing source                 | https://developers.cloudflare.com/workers-ai/platform/pricing/ (retrieved 2026-10-26) |
 
-The deployment label and source SHA are returned by `/v1/health`, so a later matrix
-can record the exact deployed code rather than the local working tree. The report
-commit itself is documentation-only and does not change the deployed Worker.
+The deployment label and source SHA are returned by `/v1/health`, so the matrix
+records the exact deployed code rather than the local working tree. The local report
+commit (`a53509d…`) contains documentation only; the deployed Worker is still
+`a38d7d5…`. `sourceShaMatchesDeployment: false` in the raw results is therefore
+expected and does not mean the matrix tested a different Worker.
 
 ## 3. Live evidence (not fixtures)
 
-Checked against the deployed URLs on 2026-10-26:
+Checked against the deployed URLs on 2026-10-27:
 
-- `/v1/health` returned `status: ok`, the Workers AI provider, the exact model above,
-  source SHA `a38d7d5…`, prompt/validator/technique `2026-10-26.2` / `2026-10-26.3` /
-  `2026-10-26.2`, and the pricing source/date.
-- The hosted frontend sent an unauthenticated request to `/login?next=%2F` (302).
-  The login page returned 200 HTML with a code input and a restrictive CSP.
-- A valid tester code posted to `/__auth` returned 303 to
-  `/discover?mode=word` and a cookie with `HttpOnly; Secure; SameSite=Lax; Max-Age=43200`.
-  The gated `/discover?mode=word` then returned 200 HTML; the JS and CSS assets
-  returned 200 with the correct content types.
-- The built bundle contains the trial API URL and keeps the Supabase functions URL
-  for dictionary and availability calls.
-- A wrong gate code returned 303 to `/login?error=1`. A cross-origin API request
-  from `https://evil.example` returned 403.
-- CORS preflight from the hosted frontend origin returned 204 with that exact
-  `Access-Control-Allow-Origin`.
-- An authenticated POST from the hosted frontend origin reached the API and was
-  refused by the **existing** limit, not by authentication:
+- `/v1/health` at 00:03 UTC returned `status: ok`, the Workers AI provider, the exact
+  model above, source SHA `a38d7d5…`, deployment
+  `trial-20261026T090120Z-a38d7d5`, prompt/validator/technique
+  `2026-10-26.2` / `2026-10-26.3` / `2026-10-26.2`, and the pricing source/date.
+- The hosted frontend `/login` returned 200 HTML. `/` returned 302 to
+  `/login?next=%2F`; gated `/discover?mode=word` returned 302 to the login page.
+  A valid tester code posted to `/__auth` returned 303 to
+  `/discover?mode=word`; the gated route then returned 200 HTML.
+- The earlier gate checks still apply: a wrong code returns 303 to
+  `/login?error=1`; a cross-origin API request from `https://evil.example` returns
+  403; the hosted frontend origin gets a 204 preflight with the exact
+  `Access-Control-Allow-Origin`; unauthenticated API requests are rejected.
+- The matrix below made real requests to the deployed API after the UTC reset, not
+  fixtures. One single-word hyphen request was refused by the API before the provider
+  call, as designed.
 
-  ```json
-  {
-    "code": "trial_limit",
-    "limit": "global_turns_per_day",
-    "error": "The shared trial has reached its daily naming-turn allowance. It resets at 00:00 UTC.",
-    "providerCalls": 0
-  }
-  ```
+## 4. Live pass-2 quality matrix
 
-  HTTP 429, `providerCalls: 0`: no model call and no new usage row.
+### Run identity and an operational error
 
-No live pass-2 generation was possible today. The trial had already used **80/80**
-shared daily naming turns before this deployment. The caps were not raised.
+The planned pass was two ambiguous cases (`crane-machine`, `common-ground`) across
+five techniques: 10 user requests, with the single-word hyphen request refused before
+the provider call.
 
-## 4. Quality findings
+**Two runs executed concurrently by mistake.** A scheduled runner started at
+`00:00:15 UTC`; a foreground runner started at `00:00:20 UTC`. Both used the same
+deployed Worker, model and prompt/validator, and both requested the same 10 cases.
+The foreground run wrote `results-current.json` at `00:01:37 UTC`, overwriting the
+scheduled run's JSON. The scheduled run's aggregate survives in D1 and
+`.trial/matrix-pass2.log`; its individual suggestions were lost. The quality
+assessment below uses the preserved foreground run only. Usage includes **both**
+runs. This was an operational duplicate, not a provider retry; it is reported rather
+than hidden.
 
-### Allowance check before the matrix (2026-10-26 21:42 UTC)
+| Item                    | Value                                                               |
+| ----------------------- | ------------------------------------------------------------------- |
+| Matrix start            | `2026-10-27T00:00:20Z` (foreground); `00:00:15Z` (scheduled)        |
+| Endpoint                | `https://dotcomseekr-discovery-trial.mike-f16.workers.dev`          |
+| Deployed source SHA     | `a38d7d50fb14483a0591bb0cb3542b00a3de7f17`                          |
+| Deployment              | `trial-20261026T090120Z-a38d7d5`                                    |
+| Model                   | `@cf/meta/llama-3.3-70b-instruct-fp8-fast`                          |
+| Prompt / validator      | `2026-10-26.2` / `2026-10-26.3`                                     |
+| Cases                   | `crane-machine` (word), `common-ground` (phrase)                   |
+| Techniques              | synonyms, rhymes, affixes, possessives, hyphens                     |
+| Requests per run        | 10 (one expected pre-provider refusal)                              |
+| Provider attempts       | 9 per run; 18 in total across both runs                             |
 
-A fresh check of the deployed Worker and D1 was made before starting the 10-turn
-pass:
+### Per-case results (preserved foreground run)
 
-| Check                           | Value                                              |
-| ------------------------------- | -------------------------------------------------- |
-| Health source SHA               | `a38d7d50fb14483a0591bb0cb3542b00a3de7f17`         |
-| Deployment                      | `trial-20261026T090120Z-a38d7d5`                   |
-| Prompt / validator / technique  | `2026-10-26.2` / `2026-10-26.3` / `2026-10-26.2`    |
-| Shared daily naming turns       | **80 / 80**                                        |
-| Shared daily provider calls     | 80 / 100                                           |
-| Overall naming turns            | 80 / 150                                           |
-| Overall provider calls          | 80 / 250                                           |
-| Overall tokens                  | 41,832 / 400,000                                   |
-| Matrix turns started            | **0**                                              |
+“Useful” is the qualitative judgement in the assessment below, not schema validity. Latency
+is wall time for the request; provider latency is reported in the aggregate.
 
-The daily cap resets at 00:00 UTC, about 2h18m after this check. Because the daily
-turn allowance was zero, the 10-turn matrix was **not started**. The existing limit
-check refuses at HTTP 429 before any provider call and adds no row; starting now
-would only reproduce that refusal. No caps were changed, no provider calls were
-made, and no D1 rows were added. The cumulative totals below therefore still contain
-the earlier 80 turns only.
+| Case           | Technique   | HTTP | Provider calls | Accepted / rejected | Useful | Input | Output | Total | Neurons | Est. cost | Latency   |
+| -------------- | ----------- | ---: | -------------: | ------------------: | -----: | ----: | -----: | ----: | ------: | --------: | --------: |
+| crane-machine  | synonyms    |  200 |              1 |                5 / 0 |    5/5 |   464 |    174 |   638 | 48.0099 | $0.000528 | 15,153 ms |
+| crane-machine  | rhymes      |  200 |              1 |                1 / 4 |    0/1 |   513 |    184 |   697 | 51.3647 | $0.000565 |  5,127 ms |
+| crane-machine  | affixes     |  200 |              1 |                3 / 2 |    0/3 |   545 |    143 |   688 | 43.8210 | $0.000482 | 12,639 ms |
+| crane-machine  | possessives |  200 |              1 |                4 / 0 |    2/4 |   476 |    137 |   613 | 40.7521 | $0.000448 |  7,158 ms |
+| crane-machine  | hyphens     |  400 |              0 |                0 / 0 |    n/a |     0 |      0 |     0 |      0 |    $0.000 |     13 ms |
+| common-ground  | synonyms    |  200 |              1 |                1 / 1 |    0/1 |   568 |     69 |   637 | 29.2788 | $0.000322 |  2,870 ms |
+| common-ground  | rhymes      |  200 |              1 |                1 / 0 |    1/1 |   617 |     51 |   668 | 26.8990 | $0.000296 |  1,940 ms |
+| common-ground  | affixes     |  200 |              1 |                3 / 0 |    0/3 |   677 |    107 |   784 | 39.9682 | $0.000439 |  6,145 ms |
+| common-ground  | possessives |  200 |              1 |                4 / 0 |    3/4 |   568 |    149 |   717 | 45.6632 | $0.000502 |  7,275 ms |
+| common-ground  | hyphens     |  200 |              1 |                1 / 0 |    1/1 |   552 |     48 |   600 | 24.5512 | $0.000270 |  2,454 ms |
 
-The planned post-reset pass is two ambiguous cases (`crane-machine` and
-`common-ground`) across five techniques. It uses at most 10 turns and would leave at
-least 70/80 daily turns and 60/150 overall turns for Mike, subject to the unchanged
-caps. Single-word hyphen requests are refused before the provider, so fewer than 10
-provider calls are expected.
+Foreground totals: **9 provider attempts, 23 accepted suggestions, 7 rejected
+candidates, 6,042 tokens (4,980 in / 1,062 out), 350.31 billed Neurons, $0.003852
+estimated, 6,751 ms average provider latency.** The single-word hyphen refusal is an
+expected API validation response, not a provider failure: HTTP 400
+`technique_unavailable`, zero provider calls.
 
-Hosted URL re-check at the same time: `/login` returned 200, `/` returned 302 to
-`/login?next=%2F`, gated `/discover?mode=word` returned 302, a valid code posted to
-`/__auth` returned 303 to the gated route, and the gated route then returned 200
-HTML. The code was read from the gitignored `.trial/access-keys.local.txt`; it was not
-printed, placed in a URL or logged, and the temporary cookie jar was removed.
+### Quality assessment
 
-### Pass-2 live quality: not measured
+Each accepted suggestion was judged separately on the request's criteria:
 
-The matrix was not run because the fresh allowance check above found zero daily
-turns. Reporting a pass-2 relevance score from the pass-1 outputs would mix archived
-and current data, so this report makes no live pass-2 quality claim. There are also
-no pass-2 live empty-round observations; the empty-round contract is covered by
-fixtures, not by live model output.
+1. valid recognised word or permitted construction;
+2. correct technique;
+3. relationship to the selected brand meaning and commentary;
+4. readability as a domain label;
+5. useful suggestion versus merely schema-valid.
 
-The reproducible runner is `workers/discovery-trial/scripts/trial-matrix.mjs`. Use
-`TRIAL_MATRIX_CASES=crane-machine,common-ground` for a 10-turn pass (one ambiguous
-word and one ambiguous phrase across all five techniques) after the UTC reset. It
-writes `docs/workers-ai-trial/results-current.json` and records source SHA,
-deployment, model and prompt/validator/technique versions. The full four-case pass is
-20 turns and should only run when the daily and overall allowances permit it.
+An unusual combination was not rejected just for being unusual; it was judged in the
+actual brand context (industrial crane rental, or neighbour mediation). A suggestion
+counts as useful only if it could plausibly be proposed to a client.
 
-### Pass-2 validator boundaries: fixture evidence
+| Case / technique          | Accepted | Useful | Assessment                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------------- | -------: | -----: | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Crane / synonyms          |        5 |      5 | `hoist`, `winch`, `derrick`, `gantry`, `lift` all keep the lifting-machine meaning and are readable. `lift` is the broadest, but still usable. This is the strongest round.                                                                                                                                                                                        |
+| Crane / rhymes            |        1 |      0 | `plane` is a recognised rhyme, but the reason (“the flat area where the machine operates”) is a stretch; it does not reinforce crane rental. `drane`, `grane`, `trane` and `strane` were correctly rejected as non-words.                                                                                                                                    |
+| Crane / affixes           |        3 |      0 | `craneness`, `craneify` and `recrane` use bound affixes, so they pass the boundary rule, but they are awkward as brands. `cranelike` was rejected even though `-like` is a productive suffix; that is a false negative, not a quality win. `cranability` was correctly rejected as malformed.                                                                     |
+| Crane / possessives       |        4 |      2 | `ourcrane` and `yourcrane` are natural for an equipment-rental brand. `mycrane` and `theircrane` are grammatical but less convincing.                                                                                                                                                                                                                           |
+| Crane / hyphens           |        0 |    n/a | Single-word hyphenation is unavailable by design (HTTP 400 before the provider). This is correct behaviour, not a failed round.                                                                                                                                                                                                                               |
+| Common ground / synonyms  |        1 |      0 | `commonconsensus` keeps the agreement meaning but is redundant (“common” + “consensus”) and reads poorly. The model correctly avoided returning the working name itself.                                                                                                                                                                                         |
+| Common ground / rhymes    |        1 |      1 | `commonround` is a recognised rhyme and “round” can mean a discussion or roundtable, which fits mediation. It is the best rhyme in this pass, though still marginal as a brand.                                                                                                                                                                                  |
+| Common ground / affixes   |        3 |      0 | `commonnessground`, `recommonground` and `commonifyground` attach a bound affix to “common”, but the joined results are malformed or misleading (`recommonground` reads like “recommend ground”). This remains the weakest technique for phrases.                                                                                                                 |
+| Common ground / possessives |      4 |      3 | `ourcommonground`, `yourcommonground` and `theircommonground` are grammatically natural expansions of “common ground” and fit a shared mediation space. `mycommonground` is more individual and weaker.                                                                                                                                                             |
+| Common ground / hyphens   |        1 |      1 | `common-ground` is exactly the permitted transformation, readable, and keeps the brand meaning. A clean, if unambitious, result.                                                                                                                                                                                                                               |
 
-These are deterministic tests of the current validator, not model-quality evidence.
-All 134 web tests pass.
+**Foreground quality: 12 useful out of 23 accepted (52%).** Technical validity was
+high, but nearly half of the accepted output was merely schema-valid. The useful
+suggestions were concentrated in synonyms and possessives; affixes and rhymes
+produced little that a client would choose. A cheap response that returns five weak
+suggestions is therefore not counted as a success.
 
-- `cranehire`, `craneworks`, `cranepro`, `cranelift`, `craneplus`, `cranemax` and
-  `industrialscrane` are rejected because the added piece is a separate recognised
-  word, not a bound affix. The test asserts the underlying rule across several
-  examples rather than only the three named failures, including a case where the
-  joined compound is itself in the recognised set.
-- `getclean` is rejected for the same reason; `cleanable` and `reclean` are accepted.
-- `mycrane` in an affix round is rejected as a possessive; `craneable` passes.
-- `commonround` with the reason “round rhymes with ground” is rejected even though it
-  is a real rhyme. The same suggestion is accepted when the reason connects “round”
-  to shared agreement or a cycle of agreement.
-- `swiftier` is rejected as a grammatical ending that is not a real word;
-  `swiftish` is accepted as a productive bound suffix; `swiftly`, `swiftness` and
-  `swiftify` remain accepted.
-- Empty rounds are explicit `variations: []` responses with a reason and message;
-  the browser shows the server message. No invented-spelling mode was added.
+Rejected candidates: 7 in the foreground (4 non-word rhymes, 2 malformed affixes,
+1 self-suggestion). Six were correctly rejected; `cranelike` is the one questionable
+false negative because `-like` is a productive suffix. The validator's allowlist is
+deliberately conservative, but this is a boundary worth revisiting before treating
+affix rejection as a pure quality signal.
 
-### Archived pass-1 quality (clearly historical)
+### Empty rounds and previous failures
 
-The pass-1 matrix produced 78 accepted suggestions across 20 provider-backed
-attempts; about 50 were judged useful in context. Technical compliance was strong,
-but semantic fit was the limiting factor. In particular, `commonround` was the only
-`common ground` rhyme judged useful; `commonmound` pulled toward soil, `commonfound`
-read ungrammatically and `commonwound` was negative or weakly positive depending on
-the model's own reason.
+- No empty round occurred in the preserved foreground run.
+- The duplicate scheduled run had one empty round: `common-ground` / hyphens returned
+  HTTP 200 with zero suggestions and `empty_model_response`. Its response body was
+  overwritten, but D1 and the run log record the empty outcome. The UI's empty-state
+  notice is covered by fixtures; the live empty state was not clicked through.
+- No prior failed spelling (`drane`, `grane`, `krane`, `blueflorit`, `herswift`,
+  `uncommonground`) appeared in any preserved accepted output. This is a containment
+  check on these cases, not a re-test of those original inputs.
 
-Pass 1 also accepted `cranelift`, `craneplus` and `cranemax` in the crane affix
-round, and the blind proxy comparison considered `cranehire`, `craneworks` and
-`cranepro` more readable than the trial's compound answers. Those outputs predate the
-pass-2 boundary. The new rule deliberately rejects them, which should reduce affix
-breadth. Whether the remaining bound affixes are useful is exactly what the fresh
-matrix must measure; this report does not claim they are better or worse.
+### Duplicate run aggregate (quality not assessable)
 
-Archived empty-round finding: one `common ground` hyphen round returned an empty
-model response and was reported as `empty_model_response` with no filler. That is a
-pass-1 observation, not a pass-2 live result.
+The scheduled run produced 20 accepted suggestions across 7 successful provider
+turns, one 503 `lexical_unavailable` rhyme round, one empty hyphen round, and the
+expected single-word hyphen 400. D1 records 9 candidate rejections (the runner's
+console line undercounted five from the 503 round; D1 is authoritative). Its
+individual suggestions were overwritten, so no quality verdict is claimed for it.
+Its usage is included below.
 
-## 5. Usage and remaining allowance
+## 5. Measured usage and remaining allowance
 
-### Cumulative trial usage (all rows to date, before pass-2 generation)
+### This pass (both runs, actual D1 rows)
 
-| Metric                                |                                        Value |
-| ------------------------------------- | -------------------------------------------: |
-| Provider attempts                     |                                           80 |
-| Successful attempts                   |                                           67 |
-| Validation rejections                 |                                           13 |
-| Provider errors / retries             |                                        0 / 0 |
-| Input tokens                          | 27,095 (success) + 5,036 (rejected) = 32,131 |
-| Output tokens                         |   8,388 (success) + 1,313 (rejected) = 9,701 |
-| Total tokens                          |                                       41,832 |
-| Billed usage (actual `usage.neurons`) |                             2,843.68 Neurons |
-| Estimated cost                        |                                    $0.031271 |
-| Average provider latency              |                                     3,910 ms |
-| Accepted suggestions                  |                                           78 |
-| Candidates rejected by validation     |                                           62 |
-| Lexical-service calls / cache hits    |                                      60 / 14 |
-| Lexical-service cost                  |                        $0.00 (Wikimedia API) |
+| Metric                          | Foreground | Scheduled duplicate |            Both runs |
+| ------------------------------- | ---------: | ------------------: | -------------------: |
+| Provider attempts               |          9 |                   9 |                   18 |
+| Successful provider turns       |          9 |                   7 |                   16 |
+| Validation-rejected turns       |          0 |                   2 |                    2 |
+| Provider errors / retries       |      0 / 0 |               0 / 0 |                0 / 0 |
+| Input tokens                    |      4,980 |               4,980 |                9,960 |
+| Output tokens                   |      1,062 |               1,086 |                2,148 |
+| Total tokens                    |      6,042 |               6,066 |               12,108 |
+| Billed Neurons (`usage.neurons`) |    350.31 |              355.22 |               705.53 |
+| Estimated cost                  |  $0.003852 |           $0.003906 |             $0.007758 |
+| Average provider latency        |  6,751 ms |            6,584 ms |              6,668 ms |
+| Accepted suggestions            |         23 |                  20 |                   43 |
+| Candidates rejected             |          7 |                   9 |                   16 |
+| Lexical calls / cache hits      |      7 / 17 |              16 / 10 |              23 / 27 |
+| Lexical-service cost            |      $0.00 |               $0.00 |                $0.00 |
 
-These rows predate the pass-2 prompt. They are useful for the trial's actual spend and
-for the remaining-allowance arithmetic, not as a pass-2 per-turn estimate. The fresh
-allowance check created no pass-2 rows.
+The scheduled run's “2 validation-rejected turns” are the 503 rhyme round and the
+empty hyphen round; the 400 single-word hyphen request never reached the provider and
+is not an attempt. There were no provider-level retries inside a turn.
 
-### Remaining allowance
+### Per user turn
 
-| Limit                                   |              Used |                       Remaining |
-| --------------------------------------- | ----------------: | ------------------------------: |
-| Shared daily naming turns               |           80 / 80 |  **0 today** (resets 00:00 UTC) |
-| Shared daily provider calls             |          80 / 100 | 20 today, but turns block first |
-| Overall naming turns                    |          80 / 150 |                              70 |
-| Overall provider calls                  |          80 / 250 |                             170 |
-| Overall tokens                          |  41,832 / 400,000 |                         358,168 |
-| Daily free Neurons (account allocation) | 2,843.68 / 10,000 |                        7,156.32 |
+A user turn is one explicit request for a batch of naming suggestions. The
+foreground run is 10 user turns, 9 of which reached the provider:
 
-At the pass-1 average of **44.86 Neurons per provider turn**, the remaining daily free
-allocation is about **159 turns**, but the trial's own **70-turn overall cap** is the
-binding limit, and today's shared cap is already exhausted. This is arithmetic from
-the archived measured average, not a pass-2 measurement.
+- **Tokens per user turn:** 604.2 (671.3 per provider attempt)
+- **Billed Neurons per user turn:** 35.03 (38.92 per provider attempt)
+- **Estimated cost per user turn:** **$0.000385** ($0.000428 per provider attempt)
+- **Provider latency per provider attempt:** 6,751 ms; wall time per user turn: 6,723 ms
+- **Useful suggestions per user turn:** 1.2 (12 useful / 10 requests); 1.33 per provider turn
 
-Projected cost at the same archived average:
+The 100/1,000-turn projections below use the measured foreground cost per user turn.
+They are arithmetic from 10 requests, not a demand forecast:
 
 | Scale       | Estimated cost |
 | ----------- | -------------: |
-| 100 turns   |    **$0.0493** |
-| 1,000 turns |     **$0.493** |
+| 100 turns   |     **$0.0385** |
+| 1,000 turns |      **$0.385** |
 
-These projections are not a pass-2 estimate: the new prompt is longer and the
-validator now rejects more affix candidates, so tokens per turn and useful
-suggestions per turn may change.
+Using both runs' 20 user requests instead gives $0.000388 per user turn,
+**$0.0388 / 100** and **$0.388 / 1,000**; the difference is negligible. No
+Neuron-to-token conversion was invented: cost uses the provider's token prices, while
+Neurons are the provider's actual billed units.
+
+### Cumulative and remaining allowance
+
+After both runs, D1 contains **98 provider attempts / 98 turns / 53,940 tokens /
+3,549.21 billed Neurons / $0.039028 estimated** across the whole trial.
+
+| Limit                     |            Used | Remaining        |
+| ------------------------- | --------------: | ---------------: |
+| Shared daily naming turns |         18 / 80 | **62 today**     |
+| Shared daily provider calls |        18 / 100 | 82 today        |
+| Overall naming turns      |         98 / 150 | **52**          |
+| Overall provider calls    |         98 / 250 | 152             |
+| Overall tokens            | 53,940 / 400,000 | 346,060         |
+| Daily free Neurons (account allocation) | 705.53 / 10,000 | 9,294.47 (trial-attributed only) |
+
+The binding limit for Mike is **52 overall naming turns**, not the daily or Neuron
+allowance. That is comfortably above the requested 20-turn reserve. At the measured
+35.03 Neurons per user turn, 52 turns would use about 1,822 Neurons, well inside the
+trial-attributed daily free allocation; the 150-turn cap arrives first. These are
+small-sample estimates.
 
 ### Uncertainty
 
 - The 10,000-Neuron daily allocation is shared across the Cloudflare account.
-  Account-wide consumption is not exposed by the tooling used; only per-request
-  billed Neurons are actual.
-- Billing alerts are notifications, not hard spending caps. None were relied on.
-  No paid overage was enabled and no plan change was made.
+  Account-wide consumption is not exposed by the tooling used; only the trial's
+  per-request billed Neurons are actual. “9,294.47 left” is trial-attributed, not a
+  statement about the whole account.
+- Billing alerts are notifications, not hard spending caps. None were relied on. No
+  paid overage was enabled and no plan change was made.
+- The matrix used two cases and 18 provider attempts; per-turn averages are indicative,
+  not a stable forecast. The duplicate run is included in spend but not in the
+  quality score.
 - The trial's limit checks are check-then-insert and can overshoot slightly under
   concurrent requests. This is a bounded trial, not billing-grade quota enforcement.
-- No OpenAI fallback or BYOK/login/billing work was added.
+- No OpenAI fallback, login, billing or BYOK work was added.
 
 ## 6. Checks run
 
@@ -277,22 +304,22 @@ npx --no-install tsc -p workers/trial-web/tsconfig.json --noEmit
 ```
 
 The Worker tests include a fake AI binding and fake lexical verifier, so they are
-fixtures. The live checks in section 3 are the only live evidence for this pass.
+fixtures. The live checks in sections 3 and 4 are the live evidence for this pass.
 
 PR checks: GitGuardian passed and the Cloudflare Workers Builds branch **preview**
 passed. `wrangler deployments list --name dotcomseekr2` still shows the latest
 production deployment on 2026-10-24, before this branch was pushed; the push did not
 release production.
 
-Not run:
+Not run or not verified:
 
-- A pass-2 live quality matrix: not started because the 2026-10-26 21:42 UTC check
-  found 80/80 daily turns; caps unchanged and no provider calls made.
-- A pass-2 live empty-round UI click: same block. The response contract and UI notice
-  are covered by tests.
-- Deno typecheck or deployment of the Supabase function: Deno is not installed; the
+- A live click-through of the empty-round UI state. The duplicate run produced one
+  empty API round, but its response body was overwritten before the UI check.
+- Deno typecheck or deployment of the Supabase function. Deno is not installed; the
   production function was not deployed.
 - Any production deployment, merge, OpenAI comparison, login, billing or BYOK.
+- A fresh comparison against the existing OpenAI integration. Provider comparisons
+  are stopped for this task.
 
 ## 7. Merge order
 

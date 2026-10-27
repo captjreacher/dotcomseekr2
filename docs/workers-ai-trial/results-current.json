@@ -1,0 +1,474 @@
+{
+  "generatedAt": "2026-10-27T00:01:37.038Z",
+  "endpoint": "https://dotcomseekr-discovery-trial.mike-f16.workers.dev",
+  "archive": false,
+  "caseIds": [
+    "crane-machine",
+    "common-ground"
+  ],
+  "sourceSha": "a53509d0aac94bd4aaa5d267cffcce9e7be12350",
+  "sourceDirty": false,
+  "deployedSourceSha": "a38d7d50fb14483a0591bb0cb3542b00a3de7f17",
+  "sourceShaMatchesDeployment": false,
+  "deploymentVersion": "trial-20261026T090120Z-a38d7d5",
+  "promptVersion": "2026-10-26.2",
+  "validatorVersion": "2026-10-26.3",
+  "techniqueVersion": "2026-10-26.2",
+  "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+  "health": {
+    "httpStatus": 200,
+    "service": "dotcomseekr-discovery-trial",
+    "status": "ok",
+    "provider": "workers-ai",
+    "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    "sourceSha": "a38d7d50fb14483a0591bb0cb3542b00a3de7f17",
+    "deploymentVersion": "trial-20261026T090120Z-a38d7d5",
+    "promptVersion": "2026-10-26.2",
+    "validatorVersion": "2026-10-26.3",
+    "techniqueVersion": "2026-10-26.2",
+    "pricing": {
+      "source": "https://developers.cloudflare.com/workers-ai/platform/pricing/",
+      "retrieved": "2026-10-26"
+    },
+    "time": "2026-10-27T00:00:20.881Z"
+  },
+  "summary": {
+    "requests": 10,
+    "providerTurns": 9,
+    "successfulTurns": 9,
+    "emptyRounds": 0,
+    "failedTurns": 1,
+    "acceptedSuggestions": 23,
+    "rejectedCandidates": 7,
+    "lexicalCalls": 7,
+    "lexicalCacheHits": 17,
+    "previousFailures": [
+      "drane",
+      "grane",
+      "krane",
+      "blueflorit",
+      "herswift",
+      "uncommonground"
+    ],
+    "forbiddenHits": []
+  },
+  "cases": [
+    {
+      "id": "crane-machine",
+      "mode": "word",
+      "technique": "synonyms",
+      "ambiguity": "crane can mean a bird, to stretch the neck, or lifting machinery.",
+      "input": {
+        "original": "crane",
+        "meaning": "a tall machine that lifts and moves heavy loads",
+        "commentary": "Industrial equipment rental for construction teams. The meaning is the machine."
+      },
+      "turnId": "aa154e1d-750e-4b70-b4c7-27dd09262ada",
+      "httpStatus": 200,
+      "elapsedMs": 15464,
+      "providerCalls": 1,
+      "acceptedCount": 5,
+      "rejectedCount": 0,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": null,
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "hoist",
+          "reason": "a device used to lift heavy loads, fitting the industrial equipment rental context"
+        },
+        {
+          "spelling": "winch",
+          "reason": "a machine used for lifting or pulling heavy loads, relevant to construction teams"
+        },
+        {
+          "spelling": "derrick",
+          "reason": "a type of machine used for lifting and moving heavy loads, commonly used in construction"
+        },
+        {
+          "spelling": "gantry",
+          "reason": "a type of crane or overhead structure used for lifting and moving heavy loads"
+        },
+        {
+          "spelling": "lift",
+          "reason": "a general term for a machine that lifts heavy loads, applicable to industrial equipment rental"
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "id": "crane-machine",
+      "mode": "word",
+      "technique": "rhymes",
+      "ambiguity": "crane can mean a bird, to stretch the neck, or lifting machinery.",
+      "input": {
+        "original": "crane",
+        "meaning": "a tall machine that lifts and moves heavy loads",
+        "commentary": "Industrial equipment rental for construction teams. The meaning is the machine."
+      },
+      "turnId": "f331fcbf-b5f8-4fea-8113-c3846b24be8d",
+      "httpStatus": 200,
+      "elapsedMs": 8494,
+      "providerCalls": 1,
+      "acceptedCount": 1,
+      "rejectedCount": 4,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": {
+        "status": "ok",
+        "source": "Wiktionary (Wikimedia Foundation)",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://en.wiktionary.org/wiki/Wiktionary:Copyrights",
+        "verified": true,
+        "calls": 5,
+        "cacheHits": 0,
+        "latencyMs": 3086,
+        "costUsd": 0
+      },
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "plane",
+          "reason": "plane rhymes with crane and could refer to the flat area where the machine operates"
+        }
+      ],
+      "rejected": [
+        {
+          "value": "drane",
+          "reason": "“drane” is not a recognised English word."
+        },
+        {
+          "value": "grane",
+          "reason": "“grane” is not a recognised English word."
+        },
+        {
+          "value": "trane",
+          "reason": "“trane” is not a recognised English word."
+        },
+        {
+          "value": "strane",
+          "reason": "“strane” is not a recognised English word."
+        }
+      ]
+    },
+    {
+      "id": "crane-machine",
+      "mode": "word",
+      "technique": "affixes",
+      "ambiguity": "crane can mean a bird, to stretch the neck, or lifting machinery.",
+      "input": {
+        "original": "crane",
+        "meaning": "a tall machine that lifts and moves heavy loads",
+        "commentary": "Industrial equipment rental for construction teams. The meaning is the machine."
+      },
+      "turnId": "5b37ea53-7b19-4203-99de-f7945137a096",
+      "httpStatus": 200,
+      "elapsedMs": 14050,
+      "providerCalls": 1,
+      "acceptedCount": 3,
+      "rejectedCount": 2,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": {
+        "status": "ok",
+        "source": "Wiktionary (Wikimedia Foundation)",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://en.wiktionary.org/wiki/Wiktionary:Copyrights",
+        "verified": true,
+        "calls": 2,
+        "cacheHits": 7,
+        "latencyMs": 1107,
+        "costUsd": 0
+      },
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "craneness",
+          "reason": "conveys the quality of being a tall machine"
+        },
+        {
+          "spelling": "craneify",
+          "reason": "means to make or become like the machine"
+        },
+        {
+          "spelling": "recrane",
+          "reason": "means to provide or install the machine again"
+        }
+      ],
+      "rejected": [
+        {
+          "value": "cranelike",
+          "reason": "That is a separate word, not a linguistic prefix or suffix."
+        },
+        {
+          "value": "cranability",
+          "reason": "Must be the working name with a readable prefix or suffix."
+        }
+      ]
+    },
+    {
+      "id": "crane-machine",
+      "mode": "word",
+      "technique": "possessives",
+      "ambiguity": "crane can mean a bird, to stretch the neck, or lifting machinery.",
+      "input": {
+        "original": "crane",
+        "meaning": "a tall machine that lifts and moves heavy loads",
+        "commentary": "Industrial equipment rental for construction teams. The meaning is the machine."
+      },
+      "turnId": "68ec7830-2cd0-4f6a-8de5-5c09999b27f8",
+      "httpStatus": 200,
+      "elapsedMs": 7388,
+      "providerCalls": 1,
+      "acceptedCount": 4,
+      "rejectedCount": 0,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": null,
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "ourcrane",
+          "reason": "indicates the crane is owned or provided by the company for rental"
+        },
+        {
+          "spelling": "yourcrane",
+          "reason": "suggests the crane is available for the customer's use"
+        },
+        {
+          "spelling": "mycrane",
+          "reason": "implies a personal or company-owned crane for rental purposes"
+        },
+        {
+          "spelling": "theircrane",
+          "reason": "could refer to the crane being rented out to or used by their construction teams"
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "id": "crane-machine",
+      "mode": "word",
+      "technique": "hyphens",
+      "ambiguity": "crane can mean a bird, to stretch the neck, or lifting machinery.",
+      "input": {
+        "original": "crane",
+        "meaning": "a tall machine that lifts and moves heavy loads",
+        "commentary": "Industrial equipment rental for construction teams. The meaning is the machine."
+      },
+      "turnId": "679207bc-8f82-4ffc-821b-97e4779f0915",
+      "httpStatus": 400,
+      "elapsedMs": 13,
+      "providerCalls": 0,
+      "acceptedCount": 0,
+      "rejectedCount": 0,
+      "error": "Hyphens need a multi-word name. A single word has no word boundary to hyphenate.",
+      "code": "technique_unavailable",
+      "noResults": null,
+      "lexical": null,
+      "model": null,
+      "variations": [],
+      "rejected": []
+    },
+    {
+      "id": "common-ground",
+      "mode": "phrase",
+      "technique": "synonyms",
+      "ambiguity": "ground can be soil, a reason, or an area of agreement.",
+      "input": {
+        "original": "common ground",
+        "meaning": "shared agreement between people who disagree",
+        "commentary": "A mediation service for neighbours in disputes. Ground is figurative agreement, not soil."
+      },
+      "turnId": "d79cc96a-55a7-434f-a38b-ca52c3e730c2",
+      "httpStatus": 200,
+      "elapsedMs": 3100,
+      "providerCalls": 1,
+      "acceptedCount": 1,
+      "rejectedCount": 1,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": null,
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "commonconsensus",
+          "reason": "A synonym for ground is consensus, meaning a collective agreement.",
+          "changedWord": "ground"
+        }
+      ],
+      "rejected": [
+        {
+          "value": "commonground",
+          "reason": "That is the working name itself."
+        }
+      ]
+    },
+    {
+      "id": "common-ground",
+      "mode": "phrase",
+      "technique": "rhymes",
+      "ambiguity": "ground can be soil, a reason, or an area of agreement.",
+      "input": {
+        "original": "common ground",
+        "meaning": "shared agreement between people who disagree",
+        "commentary": "A mediation service for neighbours in disputes. Ground is figurative agreement, not soil."
+      },
+      "turnId": "82c4c6b0-6f03-4ff8-a6f2-24511d7c5fee",
+      "httpStatus": 200,
+      "elapsedMs": 2174,
+      "providerCalls": 1,
+      "acceptedCount": 1,
+      "rejectedCount": 0,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": {
+        "status": "ok",
+        "source": "Wiktionary (Wikimedia Foundation)",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://en.wiktionary.org/wiki/Wiktionary:Copyrights",
+        "verified": true,
+        "calls": 0,
+        "cacheHits": 1,
+        "latencyMs": 44,
+        "costUsd": 0
+      },
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "commonround",
+          "reason": "round implies a meeting or discussion, fitting the mediation service's goal of facilitating talks between disagreeing neighbours to reach a shared agreement",
+          "changedWord": "ground"
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "id": "common-ground",
+      "mode": "phrase",
+      "technique": "affixes",
+      "ambiguity": "ground can be soil, a reason, or an area of agreement.",
+      "input": {
+        "original": "common ground",
+        "meaning": "shared agreement between people who disagree",
+        "commentary": "A mediation service for neighbours in disputes. Ground is figurative agreement, not soil."
+      },
+      "turnId": "e22e4401-394e-44ff-b011-082151b50060",
+      "httpStatus": 200,
+      "elapsedMs": 6393,
+      "providerCalls": 1,
+      "acceptedCount": 3,
+      "rejectedCount": 0,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": {
+        "status": "ok",
+        "source": "Wiktionary (Wikimedia Foundation)",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://en.wiktionary.org/wiki/Wiktionary:Copyrights",
+        "verified": true,
+        "calls": 0,
+        "cacheHits": 9,
+        "latencyMs": 58,
+        "costUsd": 0
+      },
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "commonnessground",
+          "reason": "Adding the suffix -ness to common emphasizes the state of shared agreement",
+          "changedWord": "common"
+        },
+        {
+          "spelling": "recommonground",
+          "reason": "Adding the prefix re- to common suggests rebuilding or renewing agreement",
+          "changedWord": "common"
+        },
+        {
+          "spelling": "commonifyground",
+          "reason": "Adding the suffix -ify to common implies making or creating agreement",
+          "changedWord": "common"
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "id": "common-ground",
+      "mode": "phrase",
+      "technique": "possessives",
+      "ambiguity": "ground can be soil, a reason, or an area of agreement.",
+      "input": {
+        "original": "common ground",
+        "meaning": "shared agreement between people who disagree",
+        "commentary": "A mediation service for neighbours in disputes. Ground is figurative agreement, not soil."
+      },
+      "turnId": "314fab86-a5ef-474c-af33-157646e01469",
+      "httpStatus": 200,
+      "elapsedMs": 7471,
+      "providerCalls": 1,
+      "acceptedCount": 4,
+      "rejectedCount": 0,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": null,
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "ourcommonground",
+          "reason": "shows the service belongs to the community it serves, fitting the shared agreement meaning"
+        },
+        {
+          "spelling": "yourcommonground",
+          "reason": "emphasizes the service is for the users' benefit, aligning with the mediation purpose"
+        },
+        {
+          "spelling": "mycommonground",
+          "reason": "could be seen as the service being a personal space for agreement, though less conventional"
+        },
+        {
+          "spelling": "theircommonground",
+          "reason": "suggests the service is a neutral, shared space for those in dispute"
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "id": "common-ground",
+      "mode": "phrase",
+      "technique": "hyphens",
+      "ambiguity": "ground can be soil, a reason, or an area of agreement.",
+      "input": {
+        "original": "common ground",
+        "meaning": "shared agreement between people who disagree",
+        "commentary": "A mediation service for neighbours in disputes. Ground is figurative agreement, not soil."
+      },
+      "turnId": "4394f877-38a2-4d52-83d0-f3aced096db0",
+      "httpStatus": 200,
+      "elapsedMs": 2687,
+      "providerCalls": 1,
+      "acceptedCount": 1,
+      "rejectedCount": 0,
+      "error": null,
+      "code": null,
+      "noResults": null,
+      "lexical": null,
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "variations": [
+        {
+          "spelling": "common-ground",
+          "reason": "uses a hyphen to join the words in the phrase, fitting the brand commentary as a single concept of shared agreement"
+        }
+      ],
+      "rejected": []
+    }
+  ]
+}
